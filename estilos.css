@@ -1,0 +1,26 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: radial-gradient(#000000, #0a0a0a);
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  canvas {
+    display: block;
+  }
+  
+  #dialogue-box {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    background: rgba(0,0,0,0.4);
+    padding: 12px 24px;
+    border-radius: 16px;
+    font-size: 18px;
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+  }
+  

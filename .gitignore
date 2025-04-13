@@ -1,0 +1,23 @@
+
+.DS_Store
+Thumbs.db
+
+
+node_modules/
+
+# Ignorar logs
+*.log
+
+
+.vscode/
+.idea/
+
+# Ignorar arquivos de configuração específicos do navegador
+*.swp
+
+
+dist/
+build/
+
+# Arquivos de ambiente
+.env
