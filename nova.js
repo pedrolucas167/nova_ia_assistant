@@ -19,7 +19,7 @@ window.addEventListener('mousemove', e => {
   mouseY = e.clientY;
 });
 
-// 🎨 Blob orgânico animado
+// Blob orgânico animado
 function noise(x) {
   return (Math.sin(x * 2.1) + Math.sin(x * 0.7) + Math.sin(x * 1.3)) / 3;
 }
@@ -85,6 +85,12 @@ function speak(text, lang = 'pt-BR') {
 
   synth.speak(utter);
   dialogueBox.textContent = `Nova: ${text}`;
+  dialogueBox.classList.remove('hide');
+  dialogueBox.classList.add('show');
+  setTimeout(() => {
+    dialogueBox.classList.remove('show');
+    dialogueBox.classList.add('hide');
+  }, 3000); // Tempo de exibição do diálogo
 }
 
 // 🤖 Comandos do assistente
