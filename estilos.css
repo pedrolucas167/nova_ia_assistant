@@ -1,45 +1,25 @@
 html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: radial-gradient(circle, #000000, #0a0a0a);
-    font-family: 'Segoe UI', sans-serif;
-    color: white;
-    height: 100%;
-  }
-  
-  canvas {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: -1;
-  }
-  
-  #dialogue-box {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 16px 32px;
-    border-radius: 16px;
-    font-size: 18px;
-    line-height: 1.5;
-    backdrop-filter: blur(10px);
-    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.6);
-    pointer-events: none;
-    transition: transform 0.3s ease-out, opacity 0.3s ease;
-  }
-  
-  #dialogue-box.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  
-  #dialogue-box.hide {
-    opacity: 0;
-    transform: translateX(-50%) translateY(20px);
-  }
-  
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: radial-gradient(#000000, #0a0a0a);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+canvas {
+  display: block;
+}
+
+#dialogue-box {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  background: rgba(0,0,0,0.4);
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-size: 18px;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
