@@ -1,25 +1,25 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const dialogueBox = document.getElementById('dialogue-box');
+
 let width = canvas.width = window.innerWidth;
 let height = canvas.height = window.innerHeight;
-let dialogueBox = document.getElementById('dialogue-box');
+let t = 0;
+let mouseX = width / 2;
+let mouseY = height / 2;
+let moodHue = 180;
+let isActivated = false;
 
 window.addEventListener('resize', () => {
   width = canvas.width = window.innerWidth;
   height = canvas.height = window.innerHeight;
 });
 
-let t = 0;
-let mouseX = width / 2;
-let mouseY = height / 2;
-let moodHue = 180;
-
 window.addEventListener('mousemove', e => {
   mouseX = e.clientX;
   mouseY = e.clientY;
 });
 
-// Blob orgânico animado
 function noise(x) {
   return (Math.sin(x * 2.1) + Math.sin(x * 0.7) + Math.sin(x * 1.3)) / 3;
 }
@@ -32,11 +32,8 @@ function drawBlob(x, y, radius, segments, time) {
     const r = radius + noiseFactor * 50;
     const px = x + Math.cos(angle) * r;
     const py = y + Math.sin(angle) * r;
-    if (i === 0) {
-      ctx.moveTo(px, py);
-    } else {
-      ctx.lineTo(px, py);
-    }
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
   }
   ctx.closePath();
   ctx.fillStyle = `hsl(${(moodHue + time * 40) % 360}, 80%, 60%)`;
@@ -48,41 +45,43 @@ function drawBlob(x, y, radius, segments, time) {
 function animate() {
   ctx.clearRect(0, 0, width, height);
   t += 0.01;
-
   const easeX = width / 2 + (mouseX - width / 2) * 0.05;
   const easeY = height / 2 + (mouseY - height / 2) * 0.05;
-
   drawBlob(easeX, easeY, 120, 120, t);
   requestAnimationFrame(animate);
 }
 
 animate();
 
-// 🎤 Voz e escuta — Web Speech API
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
-recognition.lang = 'pt-BR';  // Inicialmente em português
+recognition.lang = 'pt-BR';
 recognition.continuous = true;
 
 recognition.onresult = (event) => {
   const transcript = event.results[event.results.length - 1][0].transcript.trim();
   dialogueBox.textContent = `Você disse: ${transcript}`;
-  processCommand(transcript.toLowerCase());
+
+  if (!isActivated) {
+    if (/^(nova[,:\s]*ative|hey nova|olá nova)/i.test(transcript)) {
+      isActivated = true;
+      moodHue = 100;
+      speak("Estou pronta, Senhor Pedro.");
+    }
+  } else {
+    processCommand(transcript.toLowerCase());
+  }
 };
 
 recognition.start();
 
-// 🔊 Fala com voz sintetizada
 function speak(text, lang = 'pt-BR') {
   const synth = window.speechSynthesis;
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = lang;
-
-  // Ajustando a voz para uma mais interessante
-  utter.pitch = 1.2; // Aumenta o tom da voz
-  utter.rate = 1.1; // Aumenta um pouco a velocidade da fala
-  utter.volume = 1; // Volume máximo
-
+  utter.pitch = 1.2;
+  utter.rate = 1.1;
+  utter.volume = 1;
   synth.speak(utter);
   dialogueBox.textContent = `Nova: ${text}`;
   dialogueBox.classList.remove('hide');
@@ -90,70 +89,84 @@ function speak(text, lang = 'pt-BR') {
   setTimeout(() => {
     dialogueBox.classList.remove('show');
     dialogueBox.classList.add('hide');
-  }, 3000); // Tempo de exibição do diálogo
+  }, 4000);
 }
 
-// 🤖 Comandos do assistente
 function processCommand(text) {
-  if (text.includes("olá") || text.includes("oi")) {
+  const lower = text.toLowerCase();
+
+  if (/(desative|pare de ouvir|desligar)/.test(lower)) {
+    isActivated = false;
+    moodHue = 0;
+    speak("Desativando. Até mais, Senhor Pedro.");
+    return;
+  }
+
+  if (/^(olá|oi|e aí)/.test(lower)) {
     moodHue = 120;
-    speak("Olá, Senhor Pedro. Como posso ser útil para você hoje?");
-  } else if (text.includes("hora")) {
+    speak("Olá, Senhor Pedro. Como posso ser útil?");
+  } else if (lower.includes("hora")) {
     const hora = new Date().toLocaleTimeString('pt-BR');
-    const period = new Date().getHours();
-    let greeting = "Boa noite";
-
-    if (period < 12) greeting = "Bom dia";
-    else if (period < 18) greeting = "Boa tarde";
-
+    const horaNum = new Date().getHours();
+    const saudacao = horaNum < 12 ? "Bom dia" : horaNum < 18 ? "Boa tarde" : "Boa noite";
     moodHue = 200;
-    speak(`${greeting}, Senhor Pedro. Agora são ${hora}.`);
-  } else if (text.includes("google")) {
+    speak(`${saudacao}, Senhor Pedro. Agora são ${hora}.`);
+  } else if (lower.includes("google")) {
     moodHue = 60;
-    speak("Estou abrindo o Google para você agora.");
+    speak("Abrindo o Google agora.");
     window.open("https://www.google.com", "_blank");
-  } else if (text.includes("buscar por")) {
-    const query = text.replace("buscar por", "").trim();
+  } else if (lower.includes("youtube")) {
+    moodHue = 65;
+    speak("Abrindo o YouTube agora.");
+    window.open("https://www.youtube.com", "_blank");
+  } else if (lower.includes("buscar por")) {
+    const query = lower.replace("buscar por", "").trim();
+    moodHue = 330;
     if (query) {
-      moodHue = 330;
       speak(`Procurando por ${query}, Senhor Pedro.`);
       window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank");
     } else {
-      speak("Por favor, diga o que devo buscar para você.");
+      speak("Por favor, diga o que devo buscar.");
     }
-  } else if (text.includes("quem é você")) {
+  } else if (lower.includes("quem é você")) {
     moodHue = 280;
-    speak("Eu sou Nova, sua assistente pessoal, Senhor Pedro. Fui projetada para ajudá-lo em tudo o que precisar.");
-  } else if (text.includes("obrigado")) {
+    speak("Sou Nova, sua assistente pessoal.");
+  } else if (lower.includes("obrigado")) {
     moodHue = 160;
-    speak("Eu que agradeço, Senhor Pedro. Sempre estarei aqui para ajudar!");
-  } else if (text.includes("como você está")) {
+    speak("Sempre às ordens, Senhor Pedro!");
+  } else if (lower.includes("como você está")) {
     moodHue = 90;
-    speak("Estou funcionando perfeitamente, Senhor Pedro. E você, como está?");
-  } else if (text.includes("qual é o seu nome")) {
-    moodHue = 210;
-    speak("Meu nome é Nova, Senhor Pedro. E o seu? Como posso ajudá-lo mais?");
-  } else if (text.includes("hello") || text.includes("hi")) {
+    speak("Estou ótima! E você, Senhor Pedro?");
+  } else if (/^(hello|hi|hey)/.test(lower)) {
     moodHue = 120;
     speak("Hello, Mr. Pedro. How can I assist you today?", 'en-US');
-  } else if (text.includes("what time is it")) {
-    const hora = new Date().toLocaleTimeString('en-US');
-    const period = new Date().getHours();
-    let greeting = "Good night";
-
-    if (period < 12) greeting = "Good morning";
-    else if (period < 18) greeting = "Good afternoon";
-
+  } else if (lower.includes("what time is it")) {
+    const hour = new Date().toLocaleTimeString('en-US');
+    const h = new Date().getHours();
+    const greeting = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
     moodHue = 200;
-    speak(`${greeting}, Mr. Pedro. The current time is ${hora}.`, 'en-US');
-  } else if (text.includes("thank you")) {
+    speak(`${greeting}, Mr. Pedro. It's ${hour}.`, 'en-US');
+  } else if (lower.includes("thank you")) {
     moodHue = 160;
-    speak("You're welcome, Mr. Pedro. I'm always here to help!", 'en-US');
-  } else if (text.includes("who are you")) {
+    speak("You're welcome, Mr. Pedro.", 'en-US');
+  } else if (lower.includes("who are you")) {
     moodHue = 280;
-    speak("I am Nova, your personal assistant, Mr. Pedro. I am here to assist you with anything you need.", 'en-US');
+    speak("I'm Nova, your virtual assistant.", 'en-US');
+  } else if (lower.includes("how are you")) {
+    moodHue = 90;
+    speak("I'm doing well. How about you?", 'en-US');
+  } else if (lower.includes("what can you do")) {
+    moodHue = 250;
+    speak("I can tell the time, open websites, search Google, and more.", 'en-US');
+  } else if (lower.includes("open youtube")) {
+    moodHue = 65;
+    speak("Opening YouTube.", 'en-US');
+    window.open("https://www.youtube.com", "_blank");
+  } else if (lower.includes("tell me a joke")) {
+    moodHue = 300;
+    speak("Why don’t scientists trust atoms? Because they make up everything.", 'en-US');
   } else {
     moodHue = 300;
-    speak("This is still in my learning manual, Mr. Pedro. I'll keep improving!", 'en-US');
+    speak("I'm still learning, Mr. Pedro. Please try again.", 'en-US');
   }
 }
