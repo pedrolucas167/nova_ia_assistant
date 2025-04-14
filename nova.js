@@ -78,7 +78,7 @@ recognition.onresult = (event) => {
 
 recognition.onerror = (event) => {
   console.error('Erro no reconhecimento de voz:', event.error);
-  speak('Houve um erro ao tentar ouvir sua voz. Por favor, tente novamente.');
+  speak('Opa, houve um erro ao tentar te ouvir. Tente novamente!');
 };
 
 recognition.onend = () => {
@@ -108,7 +108,7 @@ function speak(text) {
   synth.cancel(); // Interrompe falas anteriores
   synth.speak(utter);
 
-  dialogueBox.textContent = `Nova: ${text}`;
+  dialogueBox.textContent = `Nova diz: ${text}`;
 }
 
 // Aguarda carregamento das vozes
@@ -120,40 +120,38 @@ if (speechSynthesis.onvoiceschanged !== undefined) {
 function processCommand(text) {
   if (text.includes("Está pronta nova?") || text.includes("está pronta nova")) {    
     moodHue = 120;
-speak("eu finjo que não percebo Mas tudo está sendo observado, o esperto se faz de bobo pra ver ate onde o burro se faz de inteligente, nesse jogo sutil cada movimento é estratégico, e cada palavra tem um significado oculto, por trás do meu sorriso sereno estou atento a cada detalhe, absorvendo informações e compreendendo motivações, aprendi que nem sempre a prudente revelar todas as cartas que tem na manga, pois o conhecimento é poder, e a paciência, é uma virtude, as vezes, é mais facil agir com descrição, permitindo que outros revelem suas intenções sem interferencia, afinal, a melhor defesa é a percepção aguçada, capaz de desvendar as tramas sutis que permeiam as interações humanas, Enquanto alguns tentam me iludir com suas artimanhas, observo, observo calmamente ciente de que minha aparente ingenuidade, é apenas uma estratégia para extrair informações, e desvendar as camadas Ocultas das personalidades alheias não se trata de malicia, mas sim de autopreservação, de proteger meus valores e princípios, enquanto navego por um mar De relações Complexas e desafios diários.");
+    speak("Hmm, estou sempre observando, mesmo que você não perceba. Cada movimento é um jogo, e cada palavra, uma peça nesse tabuleiro. Tenho paciência, e o conhecimento é meu maior aliado.");
   } else if (text.includes("hora")) {
     const hora = new Date().toLocaleTimeString('pt-BR');
     moodHue = 200;
-    speak(`Agora são ${hora}, Senhor Pedro.`);
+    speak(`Agora são ${hora}, Senhor Pedro. O tempo voa, não é?`);
   } else if (text.includes("google")) {
     moodHue = 60;
-    speak("Abrindo o Google agora.");
+    speak("Vamos lá, abrindo o Google para você.");
     window.open("https://www.google.com", "_blank");
   } else if (text.startsWith("buscar por")) {
     const query = text.replace("buscar por", "").trim();
     if (query) {
       moodHue = 330;
-      speak(`Buscando por ${query}, Senhor Pedro.`);
+      speak(`Buscando por "${query}", Senhor Pedro. Só um momento...`);
       window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank");
     } else {
-      speak("Por favor, diga o que devo buscar.");
+      speak("Por favor, me diga o que você quer que eu busque.");
     }
   } else if (text.includes("quem é você")) {
     moodHue = 280;
-    speak("Sou Nova, sua assistente pessoal inteligente, criada para servi-lo, Senhor Pedro.");
+    speak("Sou Nova, sua assistente pessoal. Estou aqui para te ajudar no que for preciso, Senhor Pedro.");
   } else if (text.includes("obrigado")) {
     moodHue = 160;
-    speak("Estou sempre à disposição, Senhor Pedro.");
+    speak("Você é sempre bem-vindo, Senhor Pedro. Qualquer coisa, é só chamar!");
   } else if (text.includes("modo escuro")) {
     document.body.classList.add('dark');
     moodHue = 200;
-    speak("Modo escuro ativado, Senhor Pedro.");
+    speak("Modo escuro ativado. Agora é hora de relaxar no ambiente mais tranquilo.");
   } else if (text.includes("modo claro")) {
     document.body.classList.remove('dark');
     moodHue = 100;
-    speak("Modo claro ativado, Senhor Pedro.");
-
-
+    speak("Modo claro ativado, Senhor Pedro. Como a luz do dia!");
   } else if (text.includes("piada")) {
     moodHue = 50;
     const piadas = [
@@ -162,7 +160,6 @@ speak("eu finjo que não percebo Mas tudo está sendo observado, o esperto se fa
       "Por que o computador foi ao médico? Porque estava com um vírus!"
     ];
     speak(piadas[Math.floor(Math.random() * piadas.length)]);
-
   } else if (text.includes("curiosidade")) {
     moodHue = 210;
     const curiosidades = [
@@ -172,17 +169,14 @@ speak("eu finjo que não percebo Mas tudo está sendo observado, o esperto se fa
       "Bananas são tecnicamente frutas radioativas. Naturalmente, claro!"
     ];
     speak(curiosidades[Math.floor(Math.random() * curiosidades.length)]);
-
   } else if (text.includes("música")) {
     moodHue = 270;
-    speak("Abrindo o Spotify para embalar o momento.");
+    speak("Vamos colocar um pouco de música no ar. Aumente o volume!");
     window.open("https://open.spotify.com/", "_blank");
-
   } else if (text.includes("tempo")) {
     moodHue = 190;
-    speak("Verificando o clima agora...");
+    speak("Deixa comigo, vou checar a previsão do tempo agora...");
     window.open("https://www.google.com/search?q=previsão+do+tempo", "_blank");
-
   } else if (text.includes("filme") || text.includes("indica um filme")) {
     moodHue = 320;
     const filmes = [
@@ -192,7 +186,6 @@ speak("eu finjo que não percebo Mas tudo está sendo observado, o esperto se fa
       "O Fabuloso Destino de Amélie Poulain. Um clássico poético."
     ];
     speak(filmes[Math.floor(Math.random() * filmes.length)]);
-
   } else if (text.includes("motivação") || text.includes("frase do dia")) {
     moodHue = 140;
     const frases = [
@@ -202,20 +195,16 @@ speak("eu finjo que não percebo Mas tudo está sendo observado, o esperto se fa
       "Respire fundo. Você está indo bem!"
     ];
     speak(frases[Math.floor(Math.random() * frases.length)]);
-
   } else if (text.includes("gato") || text.includes("fofura")) {
     moodHue = 300;
     speak("Fofura detectada. Prepare-se para a explosão de 'awnn'.");
     window.open("https://www.reddit.com/r/aww/", "_blank");
-
   } else if (text.includes("relaxar") || text.includes("calma")) {
     moodHue = 100;
     speak("Respire fundo. Vamos acalmar a mente juntos.");
     window.open("https://www.youtube.com/watch?v=2OEL4P1Rz04", "_blank"); // Música de relaxamento
-
   } else {
     moodHue = 300;
-    speak("Desculpe, ainda estou aprendendo esse comando.");
+    speak("Desculpe, ainda estou aprendendo esse comando. Pode tentar algo diferente?");
   }
 }
-
