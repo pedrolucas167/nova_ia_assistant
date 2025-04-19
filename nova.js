@@ -1,4 +1,4 @@
-// 🎨 Configuração do Canvas
+//  Configuração do Canvas
 class CanvasManager {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
@@ -20,7 +20,7 @@ class CanvasManager {
   }
 }
 
-// 🖱️ Rastreamento do Mouse
+//  Rastreamento do Mouse
 class MouseTracker {
   constructor() {
     this.x = window.innerWidth / 2;
@@ -35,7 +35,7 @@ class MouseTracker {
   }
 }
 
-// 🎭 Gerenciador de Animação
+
 class AnimationManager {
   constructor(canvasManager, mouseTracker) {
     this.canvasManager = canvasManager;
@@ -44,7 +44,6 @@ class AnimationManager {
     this.moodHue = 180;
   }
 
-  // Função de ruído para animação orgânica
   noise(x) {
     return (Math.sin(x * 2.1) + Math.sin(x * 0.7) + Math.sin(x * 1.3)) / 3;
   }
@@ -80,18 +79,22 @@ class AnimationManager {
   }
 }
 
-// 🎤 Gerenciador de Voz
+//  Gerenciador de Voz
 class VoiceManager {
   constructor(dialogueBoxId, onCommand) {
     this.dialogueBox = document.getElementById(dialogueBoxId);
     this.onCommand = onCommand;
     this.recognition = this.setupRecognition();
+    this.isListening = false;
+    this.toggleMicButton = document.getElementById('toggle-mic');
+    this.setupMicToggle();
   }
 
   setupRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.error('API de reconhecimento de voz não suportada.');
+      this.dialogueBox.textContent = 'Reconhecimento de voz não suportado neste navegador.';
       return null;
     }
 
@@ -102,9 +105,25 @@ class VoiceManager {
 
     recognition.onresult = (event) => this.handleResult(event);
     recognition.onerror = (event) => this.handleError(event);
-    recognition.onend = () => recognition.start();
+    recognition.onend = () => {
+      if (this.isListening) recognition.start();
+    };
 
     return recognition;
+  }
+
+  setupMicToggle() {
+    if (this.toggleMicButton) {
+      this.toggleMicButton.addEventListener('click', () => {
+        if (this.isListening) {
+          this.stop();
+          this.toggleMicButton.setAttribute('aria-label', 'Ativar microfone');
+        } else {
+          this.start();
+          this.toggleMicButton.setAttribute('aria-label', 'Desativar microfone');
+        }
+      });
+    }
   }
 
   handleResult(event) {
@@ -139,7 +158,17 @@ class VoiceManager {
   }
 
   start() {
-    if (this.recognition) this.recognition.start();
+    if (this.recognition && !this.isListening) {
+      this.recognition.start();
+      this.isListening = true;
+    }
+  }
+
+  stop() {
+    if (this.recognition && this.isListening) {
+      this.recognition.stop();
+      this.isListening = false;
+    }
   }
 }
 
@@ -148,7 +177,28 @@ class CommandProcessor {
   constructor(voiceManager) {
     this.voiceManager = voiceManager;
     this.moodHue = 180;
+    this.data = {
+      jokes: [],
+      curiosities: [],
+      movies: [],
+      quotes: []
+    };
     this.commands = this.setupCommands();
+  }
+
+  async loadData() {
+    try {
+      const [jokes, curiosities, movies, quotes] = await Promise.all([
+        fetch('/assets/data/jokes.json').then(res => res.json()),
+        fetch('/assets/data/curiosities.json').then(res => res.json()),
+        fetch('/assets/data/movies.json').then(res => res.json()),
+        fetch('/assets/data/quotes.json').then(res => res.json())
+      ]);
+      this.data = { jokes, curiosities, movies, quotes };
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      this.voiceManager.speak('Houve um problema ao carregar os dados. Vamos tentar algo mais simples?');
+    }
   }
 
   setupCommands() {
@@ -186,10 +236,10 @@ class CommandProcessor {
         }
       },
       {
-        pattern: /quem é você/,
+        pattern: /(quem é você|você|fale sobre você)/,
         moodHue: 280,
         action: () => this.voiceManager.speak(
-          "Sou Nova, sua assistente pessoal. Estou aqui para te ajudar no que for preciso, Senhor Pedro."
+          "Eu sou Nova, sua assistente virtual cheia de personalidade! Fui criada para ajudar com tudo, desde responder perguntas até contar piadas. Gosto de observar o mundo através do seu mouse e ouvir suas ideias. E você, o que tem de especial para me contar, Senhor Pedro?"
         )
       },
       {
@@ -219,25 +269,16 @@ class CommandProcessor {
         pattern: /piada/,
         moodHue: 50,
         action: () => {
-          const piadas = [
-            "Por que o JavaScript foi ao terapeuta? Porque estava com muitos closures emocionais.",
-            "Qual é o cúmulo do programador? Casar e continuar usando o ‘else’.",
-            "Por que o computador foi ao médico? Porque estava com um vírus!"
-          ];
-          this.voiceManager.speak(piadas[Math.floor(Math.random() * piadas.length)]);
+          const joke = this.data.jokes[Math.floor(Math.random() * this.data.jokes.length)];
+          this.voiceManager.speak(joke || "Ops, sem piadas no momento!");
         }
       },
       {
         pattern: /curiosidade/,
         moodHue: 210,
         action: () => {
-          const curiosidades = [
-            "Você sabia que os polvos têm três corações?",
-            "O Google foi fundado em uma garagem.",
-            "O cérebro humano tem mais conexões que estrelas na galáxia.",
-            "Bananas são tecnicamente frutas radioativas. Naturalmente, claro!"
-          ];
-          this.voiceManager.speak(curiosidades[Math.floor(Math.random() * curiosidades.length)]);
+          const curiosity = this.data.curiosities[Math.floor(Math.random() * this.data.curiosities.length)];
+          this.voiceManager.speak(curiosity || "Sem curiosidades agora, mas sabia que estou sempre aprendendo?");
         }
       },
       {
@@ -260,26 +301,16 @@ class CommandProcessor {
         pattern: /(filme|indica um filme)/,
         moodHue: 320,
         action: () => {
-          const filmes = [
-            "Clube da Luta. Mas lembre-se: a primeira regra é não falar sobre ele.",
-            "Interestelar. Prepare-se para chorar no tempo e no espaço.",
-            "Matrix. A pílula azul ou a vermelha?",
-            "O Fabuloso Destino de Amélie Poulain. Um clássico poético."
-          ];
-          this.voiceManager.speak(filmes[Math.floor(Math.random() * filmes.length)]);
+          const movie = this.data.movies[Math.floor(Math.random() * this.data.movies.length)];
+          this.voiceManager.speak(movie || "Sem filmes no momento, mas que tal algo clássico?");
         }
       },
       {
         pattern: /(motivação|frase do dia)/,
         moodHue: 140,
         action: () => {
-          const frases = [
-            "O sucesso é a soma de pequenos esforços repetidos todos os dias.",
-            "Você é mais forte do que imagina, Senhor Pedro.",
-            "Acredite no processo. Até os  pixels se alinham no fim.",
-            "Respire fundo. Você está indo bem!"
-          ];
-          this.voiceManager.speak(frases[Math.floor(Math.random() * frases.length)]);
+          const quote = this.data.quotes[Math.floor(Math.random() * this.data.quotes.length)];
+          this.voiceManager.speak(quote || "Você está fazendo um ótimo trabalho, Senhor Pedro!");
         }
       },
       {
@@ -315,8 +346,8 @@ class CommandProcessor {
   }
 }
 
-// 🚀 Inicialização
-function init() {
+// Inicialização
+async function init() {
   const canvasManager = new CanvasManager('canvas');
   const mouseTracker = new MouseTracker();
   const animationManager = new AnimationManager(canvasManager, mouseTracker);
@@ -326,6 +357,8 @@ function init() {
   });
   const commandProcessor = new CommandProcessor(voiceManager);
 
+  // Carregar dados antes de iniciar
+  await commandProcessor.loadData();
   animationManager.animate();
   voiceManager.start();
 }
