@@ -6,7 +6,7 @@ Nova é um assistente pessoal interativo desenvolvido para ajudar em tarefas cot
 
 ## Funcionalidades
 
-- **Compreensão de Comandos de Voz**: Nova entende comandos em **português** e **inglês**, podendo responder e executar ações como abrir sites, buscar informações e até mesmo responder perguntas pessoais.
+- **Compreensão de Comandos de Voz**: Nova entende comandos em **português**, podendo responder e executar ações como abrir sites, buscar informações e até mesmo responder perguntas pessoais.
 - **Animações e Interface Visual**: A IA tem uma animação de **blob orgânico** que reage ao movimento do mouse do usuário.
 - **Comandos Personalizados**: Defina comandos personalizados como "qual a hora?", "abrir Google", "buscar por [termo]", e muito mais.
 - **Feedback em Tempo Real**: Nova responde com voz sintetizada e feedback visual para cada ação executada.
