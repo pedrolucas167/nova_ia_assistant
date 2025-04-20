@@ -1,11 +1,9 @@
-// Configuração do Canvas (mantida igual)
 class CanvasManager {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
     this.width = this.canvas.width = window.innerWidth;
     this.height = this.canvas.height = window.innerHeight;
-
     window.addEventListener('resize', () => this.resize());
   }
 
@@ -20,12 +18,10 @@ class CanvasManager {
   }
 }
 
-// Rastreamento do Mouse (mantido igual)
 class MouseTracker {
   constructor() {
     this.x = window.innerWidth / 2;
     this.y = window.innerHeight / 2;
-
     window.addEventListener('mousemove', (e) => this.update(e));
   }
 
@@ -35,7 +31,6 @@ class MouseTracker {
   }
 }
 
-// AnimationManager com reconhecimento de voz integrado
 class AnimationManager {
   constructor(canvasManager, mouseTracker) {
     this.canvasManager = canvasManager;
@@ -43,6 +38,8 @@ class AnimationManager {
     this.t = 0;
     this.moodHue = 180;
     this.voiceActive = false;
+    this.blobSize = 120;
+    this.blobSpeed = 0.01;
     this.setupVoiceRecognition();
   }
 
@@ -65,7 +62,6 @@ class AnimationManager {
   }
 
   processVoiceCommand(transcript) {
-    // Comandos de ativação/desativação
     if (transcript.includes('nova ativar')) {
       this.voiceActive = true;
       this.updateDialogueBox("Nova: Ativada e ouvindo");
@@ -78,31 +74,64 @@ class AnimationManager {
       return;
     }
 
-    // Se não estiver ativa, ignora outros comandos
     if (!this.voiceActive) return;
 
-    // Processa comandos específicos
-    if (transcript.includes('modo escuro')) {
-      document.body.classList.add('dark');
-      this.updateDialogueBox("Nova: Modo escuro ativado");
-      this.moodHue = 200;
-    } 
-    else if (transcript.includes('modo claro')) {
-      document.body.classList.remove('dark');
-      this.updateDialogueBox("Nova: Modo claro ativado");
-      this.moodHue = 100;
+    const commands = {
+      'modo escuro': () => {
+        document.body.classList.add('dark');
+        this.moodHue = 200;
+        return "Modo escuro ativado";
+      },
+      'modo claro': () => {
+        document.body.classList.remove('dark');
+        this.moodHue = 100;
+        return "Modo claro ativado";
+      },
+      'cor azul': () => {
+        this.moodHue = 240;
+        return "Cor alterada para azul";
+      },
+      'cor verde': () => {
+        this.moodHue = 120;
+        return "Cor alterada para verde";
+      },
+      'cor vermelha': () => {
+        this.moodHue = 0;
+        return "Cor alterada para vermelho";
+      },
+      'aumentar tamanho': () => {
+        this.blobSize = Math.min(this.blobSize + 20, 200);
+        return `Tamanho aumentado para ${this.blobSize}`;
+      },
+      'diminuir tamanho': () => {
+        this.blobSize = Math.max(this.blobSize - 20, 60);
+        return `Tamanho diminuído para ${this.blobSize}`;
+      },
+      'aumentar velocidade': () => {
+        this.blobSpeed = Math.min(this.blobSpeed + 0.01, 0.05);
+        return `Velocidade aumentada`;
+      },
+      'diminuir velocidade': () => {
+        this.blobSpeed = Math.max(this.blobSpeed - 0.01, 0.005);
+        return `Velocidade diminuída`;
+      },
+      'resetar': () => {
+        this.moodHue = 180;
+        this.blobSize = 120;
+        this.blobSpeed = 0.01;
+        return "Configurações resetadas";
+      }
+    };
+
+    for (const [command, action] of Object.entries(commands)) {
+      if (transcript.includes(command)) {
+        const response = action();
+        this.updateDialogueBox(`Nova: ${response}`);
+        return;
+      }
     }
-    else if (transcript.includes('cor azul')) {
-      this.moodHue = 240;
-      this.updateDialogueBox("Nova: Cor alterada para azul");
-    }
-    else if (transcript.includes('cor verde')) {
-      this.moodHue = 120;
-      this.updateDialogueBox("Nova: Cor alterada para verde");
-    }
-    else {
-      this.updateDialogueBox(`Nova: Ouvi "${transcript}"`);
-    }
+
+    this.updateDialogueBox(`Nova: Ouvi "${transcript}"`);
   }
 
   updateDialogueBox(text) {
@@ -118,20 +147,18 @@ class AnimationManager {
     const { ctx } = this.canvasManager;
     const easeX = this.canvasManager.width / 2 + (this.mouseTracker.x - this.canvasManager.width / 2) * 0.05;
     const easeY = this.canvasManager.height / 2 + (this.mouseTracker.y - this.canvasManager.height / 2) * 0.05;
-    const radius = 120;
     const segments = 120;
 
     ctx.beginPath();
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * Math.PI * 2;
-      const r = radius + this.noise(angle + this.t) * 50;
+      const r = this.blobSize + this.noise(angle + this.t) * (this.blobSize/2);
       const px = easeX + Math.cos(angle) * r;
       const py = easeY + Math.sin(angle) * r;
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.closePath();
     
-    // Efeito visual quando está ouvindo
     const pulse = this.voiceActive ? Math.abs(Math.sin(this.t * 5)) * 20 : 0;
     ctx.fillStyle = `hsl(${(this.moodHue + this.t * 40) % 360}, 80%, ${60 + pulse}%)`;
     ctx.shadowColor = theme === 'dark' ? '#fff' : '#000';
@@ -142,13 +169,12 @@ class AnimationManager {
   animate() {
     const theme = document.body.classList.contains('dark') ? 'dark' : 'light';
     this.canvasManager.clear(theme);
-    this.t += 0.01;
+    this.t += this.blobSpeed;
     this.drawBlob(theme);
     requestAnimationFrame(() => this.animate());
   }
 }
 
-// Inicialização simplificada
 function init() {
   const canvasManager = new CanvasManager('canvas');
   const mouseTracker = new MouseTracker();
