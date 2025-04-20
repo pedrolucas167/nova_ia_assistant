@@ -40,7 +40,27 @@ class AnimationManager {
     this.voiceActive = false;
     this.blobSize = 120;
     this.blobSpeed = 0.01;
+    this.blobPulse = 0;
     this.setupVoiceRecognition();
+    this.createDialogueBox();
+  }
+
+  createDialogueBox() {
+    const box = document.createElement('div');
+    box.id = 'dialogue-box';
+    box.style.position = 'fixed';
+    box.style.bottom = '20px';
+    box.style.left = '50%';
+    box.style.transform = 'translateX(-50%)';
+    box.style.padding = '10px 20px';
+    box.style.backgroundColor = 'rgba(0,0,0,0.7)';
+    box.style.color = 'white';
+    box.style.borderRadius = '20px';
+    box.style.maxWidth = '80%';
+    box.style.textAlign = 'center';
+    box.style.transition = 'opacity 0.3s';
+    box.style.opacity = '0';
+    document.body.appendChild(box);
   }
 
   setupVoiceRecognition() {
@@ -62,68 +82,105 @@ class AnimationManager {
   }
 
   processVoiceCommand(transcript) {
+    // Comandos de ativação/desativação
     if (transcript.includes('nova ativar')) {
       this.voiceActive = true;
-      this.updateDialogueBox("Nova: Ativada e ouvindo");
+      this.updateDialogueBox("Nova: Ativada e ouvindo 👂");
+      this.blobPulse = 20;
+      setTimeout(() => this.blobPulse = 0, 1000);
       return;
     }
 
     if (transcript.includes('nova desativar')) {
       this.voiceActive = false;
-      this.updateDialogueBox("Nova: Em modo silencioso");
+      this.updateDialogueBox("Nova: Em modo silencioso 🤫");
       return;
     }
 
     if (!this.voiceActive) return;
 
-    const commands = {
+    // Comandos de interação básica
+    if (transcript.includes('olá') || transcript.includes('oi') || transcript.includes('ola')) {
+      const greetings = ["Olá! Sou a Nova, sua assistente visual.", "Oi! Tudo bem?", "Olá! Como posso ajudar?"];
+      const response = greetings[Math.floor(Math.random() * greetings.length)];
+      this.updateDialogueBox(`Nova: ${response} 👋`);
+      this.blobPulse = 30;
+      setTimeout(() => this.blobPulse = 0, 1500);
+      return;
+    }
+
+    if (transcript.includes('quem é você') || transcript.includes('quem e você')) {
+      this.updateDialogueBox("Nova: Sou uma entidade visual interativa. Você pode me controlar por voz! 🎤");
+      return;
+    }
+
+    // Comandos de aparência
+    const appearanceCommands = {
       'modo escuro': () => {
         document.body.classList.add('dark');
         this.moodHue = 200;
-        return "Modo escuro ativado";
+        return "Modo escuro ativado 🌙";
       },
       'modo claro': () => {
         document.body.classList.remove('dark');
         this.moodHue = 100;
-        return "Modo claro ativado";
+        return "Modo claro ativado ☀️";
       },
       'cor azul': () => {
         this.moodHue = 240;
-        return "Cor alterada para azul";
+        return "Cor alterada para azul 🔵";
       },
       'cor verde': () => {
         this.moodHue = 120;
-        return "Cor alterada para verde";
+        return "Cor alterada para verde 🟢";
       },
       'cor vermelha': () => {
         this.moodHue = 0;
-        return "Cor alterada para vermelho";
+        return "Cor alterada para vermelho 🔴";
       },
+      'cor rosa': () => {
+        this.moodHue = 300;
+        return "Cor alterada para rosa 💖";
+      },
+      'cor aleatória': () => {
+        this.moodHue = Math.floor(Math.random() * 360);
+        return "Cor alterada aleatoriamente 🎨";
+      }
+    };
+
+    // Comandos de comportamento
+    const behaviorCommands = {
       'aumentar tamanho': () => {
         this.blobSize = Math.min(this.blobSize + 20, 200);
-        return `Tamanho aumentado para ${this.blobSize}`;
+        return `Tamanho aumentado para ${this.blobSize} ⬆️`;
       },
       'diminuir tamanho': () => {
         this.blobSize = Math.max(this.blobSize - 20, 60);
-        return `Tamanho diminuído para ${this.blobSize}`;
+        return `Tamanho diminuído para ${this.blobSize} ⬇️`;
       },
       'aumentar velocidade': () => {
         this.blobSpeed = Math.min(this.blobSpeed + 0.01, 0.05);
-        return `Velocidade aumentada`;
+        return `Velocidade aumentada 🏃`;
       },
       'diminuir velocidade': () => {
         this.blobSpeed = Math.max(this.blobSpeed - 0.01, 0.005);
-        return `Velocidade diminuída`;
+        return `Velocidade diminuída 🚶`;
       },
       'resetar': () => {
         this.moodHue = 180;
         this.blobSize = 120;
         this.blobSpeed = 0.01;
-        return "Configurações resetadas";
+        return "Configurações resetadas 🔄";
+      },
+      'dançar': () => {
+        this.blobSpeed = 0.03;
+        setTimeout(() => this.blobSpeed = 0.01, 3000);
+        return "Dançando! 💃";
       }
     };
 
-    for (const [command, action] of Object.entries(commands)) {
+    // Processar comandos de aparência
+    for (const [command, action] of Object.entries(appearanceCommands)) {
       if (transcript.includes(command)) {
         const response = action();
         this.updateDialogueBox(`Nova: ${response}`);
@@ -131,12 +188,33 @@ class AnimationManager {
       }
     }
 
-    this.updateDialogueBox(`Nova: Ouvi "${transcript}"`);
+    // Processar comandos de comportamento
+    for (const [command, action] of Object.entries(behaviorCommands)) {
+      if (transcript.includes(command)) {
+        const response = action();
+        this.updateDialogueBox(`Nova: ${response}`);
+        return;
+      }
+    }
+
+    
+    const unknownResponses = [
+      "Não entendi, pode repetir?",
+      "Desculpe, não reconheci esse comando",
+      "Hmm, não sei como responder a isso",
+      "Você pode tentar outro comando?"
+    ];
+    const randomResponse = unknownResponses[Math.floor(Math.random() * unknownResponses.length)];
+    this.updateDialogueBox(`Nova: ${randomResponse}`);
   }
 
   updateDialogueBox(text) {
     const box = document.getElementById('dialogue-box');
-    if (box) box.textContent = text;
+    if (box) {
+      box.textContent = text;
+      box.style.opacity = '1';
+      setTimeout(() => box.style.opacity = '0', 3000);
+    }
   }
 
   noise(x) {
@@ -159,7 +237,7 @@ class AnimationManager {
     }
     ctx.closePath();
     
-    const pulse = this.voiceActive ? Math.abs(Math.sin(this.t * 5)) * 20 : 0;
+    const pulse = this.voiceActive ? Math.abs(Math.sin(this.t * 5)) * 20 + this.blobPulse : this.blobPulse;
     ctx.fillStyle = `hsl(${(this.moodHue + this.t * 40) % 360}, 80%, ${60 + pulse}%)`;
     ctx.shadowColor = theme === 'dark' ? '#fff' : '#000';
     ctx.shadowBlur = 40;
