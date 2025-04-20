@@ -1,4 +1,4 @@
-//  Configuração do Canvas
+// Configuração do Canvas
 class CanvasManager {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
@@ -20,7 +20,7 @@ class CanvasManager {
   }
 }
 
-//  Rastreamento do Mouse
+// Rastreamento do Mouse
 class MouseTracker {
   constructor() {
     this.x = window.innerWidth / 2;
@@ -34,7 +34,6 @@ class MouseTracker {
     this.y = event.clientY;
   }
 }
-
 
 class AnimationManager {
   constructor(canvasManager, mouseTracker) {
@@ -79,7 +78,7 @@ class AnimationManager {
   }
 }
 
-//  Gerenciador de Voz
+// Gerenciador de Voz
 class VoiceManager {
   constructor(dialogueBoxId, onCommand) {
     this.dialogueBox = document.getElementById(dialogueBoxId);
@@ -172,7 +171,7 @@ class VoiceManager {
   }
 }
 
-// 🤖 Processador de Comandos
+// Processador de Comandos
 class CommandProcessor {
   constructor(voiceManager) {
     this.voiceManager = voiceManager;
