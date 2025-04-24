@@ -1,10 +1,44 @@
+// utils.js
+const Utils = {
+  getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('pt-BR');
+  },
+
+  getCurrentDate() {
+    const now = new Date();
+    return now.toLocaleDateString('pt-BR');
+  },
+
+  logInteraction(message) {
+    console.log(`[Nova Log - ${Utils.getCurrentTime()}] ${message}`);
+  }
+};
+
+// constants.js
+const RESPONSES = {
+  greetings: [
+    "Olá! Sou a Nova, sua assistente visual.",
+    "Oi! Tudo bem?",
+    "Olá! Como posso ajudar?"
+  ],
+  unknown: [
+    "Não entendi, pode repetir?",
+    "Desculpe, não reconheci esse comando.",
+    "Hmm, não sei como responder a isso.",
+    "Você pode tentar outro comando?"
+  ]
+};
+
+// canvas manager
 class CanvasManager {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
-    this.width = this.canvas.width = window.innerWidth;
-    this.height = this.canvas.height = window.innerHeight;
+    this.resize();
     window.addEventListener('resize', () => this.resize());
+    this.particles = [];
+    this.initParticles();
   }
 
   resize() {
@@ -15,9 +49,35 @@ class CanvasManager {
   clear(theme) {
     this.ctx.fillStyle = theme === 'dark' ? '#1a1a1a' : '#fff';
     this.ctx.fillRect(0, 0, this.width, this.height);
+    this.drawParticles();
+  }
+
+  initParticles(count = 100) {
+    this.particles = Array.from({ length: count }, () => ({
+      x: Math.random() * this.width,
+      y: Math.random() * this.height,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      radius: Math.random() * 2 + 1
+    }));
+  }
+
+  drawParticles() {
+    const theme = document.body.classList.contains('dark') ? '#ccc' : '#333';
+    this.ctx.fillStyle = theme;
+    this.particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > this.width) p.vx *= -1;
+      if (p.y < 0 || p.y > this.height) p.vy *= -1;
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      this.ctx.fill();
+    });
   }
 }
 
+// mouse tracker
 class MouseTracker {
   constructor() {
     this.x = window.innerWidth / 2;
@@ -31,6 +91,7 @@ class MouseTracker {
   }
 }
 
+// animation manager
 class AnimationManager {
   constructor(canvasManager, mouseTracker) {
     this.canvasManager = canvasManager;
@@ -43,23 +104,36 @@ class AnimationManager {
     this.blobPulse = 0;
     this.setupVoiceRecognition();
     this.createDialogueBox();
+    this.applyAutoTheme();
+  }
+
+  applyAutoTheme() {
+    const hour = new Date().getHours();
+    if (hour < 6 || hour >= 18) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
   }
 
   createDialogueBox() {
     const box = document.createElement('div');
     box.id = 'dialogue-box';
-    box.style.position = 'fixed';
-    box.style.bottom = '20px';
-    box.style.left = '50%';
-    box.style.transform = 'translateX(-50%)';
-    box.style.padding = '10px 20px';
-    box.style.backgroundColor = 'rgba(0,0,0,0.7)';
-    box.style.color = 'white';
-    box.style.borderRadius = '20px';
-    box.style.maxWidth = '80%';
-    box.style.textAlign = 'center';
-    box.style.transition = 'opacity 0.3s';
-    box.style.opacity = '0';
+    Object.assign(box.style, {
+      position: 'fixed',
+      bottom: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      padding: '10px 20px',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      color: 'white',
+      borderRadius: '20px',
+      maxWidth: '80%',
+      textAlign: 'center',
+      transition: 'opacity 0.3s',
+      opacity: '0',
+      fontFamily: 'monospace'
+    });
     document.body.appendChild(box);
   }
 
@@ -70,7 +144,7 @@ class AnimationManager {
     this.recognition.interimResults = false;
 
     this.recognition.onresult = (event) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+      const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
       this.processVoiceCommand(transcript);
     };
 
@@ -82,10 +156,16 @@ class AnimationManager {
   }
 
   processVoiceCommand(transcript) {
-    // Comandos de ativação/desativação
+    Utils.logInteraction(`Comando recebido: "${transcript}"`);
+
+    const say = msg => {
+      this.updateDialogueBox(`Nova: ${msg}`);
+      Utils.logInteraction(`Resposta: "${msg}"`);
+    };
+
     if (transcript.includes('nova ativar')) {
       this.voiceActive = true;
-      this.updateDialogueBox("Nova: Ativada e ouvindo 👂");
+      say("Ativada e ouvindo 👂");
       this.blobPulse = 20;
       setTimeout(() => this.blobPulse = 0, 1000);
       return;
@@ -93,119 +173,68 @@ class AnimationManager {
 
     if (transcript.includes('nova desativar')) {
       this.voiceActive = false;
-      this.updateDialogueBox("Nova: Em modo silencioso 🤫");
+      say("Em modo silencioso 🤫");
       return;
     }
 
     if (!this.voiceActive) return;
 
-    // Comandos de interação básica
-    if (transcript.includes('olá') || transcript.includes('oi') || transcript.includes('ola')) {
-      const greetings = ["Olá! Sou a Nova, sua assistente visual.", "Oi! Tudo bem?", "Olá! Como posso ajudar?"];
-      const response = greetings[Math.floor(Math.random() * greetings.length)];
-      this.updateDialogueBox(`Nova: ${response} 👋`);
+    // comandos fixos
+    if (transcript.includes('olá') || transcript.includes('oi')) {
+      const response = RESPONSES.greetings[Math.floor(Math.random() * RESPONSES.greetings.length)];
+      say(`${response} 👋`);
       this.blobPulse = 30;
       setTimeout(() => this.blobPulse = 0, 1500);
       return;
     }
 
-    if (transcript.includes('quem é você') || transcript.includes('quem e você')) {
-      this.updateDialogueBox("Nova: Sou uma entidade visual interativa. Você pode me controlar por voz! 🎤");
+    if (transcript.includes('quem é você')) {
+      say("Sou a Nova, sua IA visual e interativa. Pode me chamar quando quiser! 🤖");
       return;
     }
 
-    // Comandos de aparência
-    const appearanceCommands = {
-      'modo escuro': () => {
-        document.body.classList.add('dark');
-        this.moodHue = 200;
-        return "Modo escuro ativado 🌙";
-      },
-      'modo claro': () => {
-        document.body.classList.remove('dark');
-        this.moodHue = 100;
-        return "Modo claro ativado ☀️";
-      },
-      'cor azul': () => {
-        this.moodHue = 240;
-        return "Cor alterada para azul 🔵";
-      },
-      'cor verde': () => {
-        this.moodHue = 120;
-        return "Cor alterada para verde 🟢";
-      },
-      'cor vermelha': () => {
-        this.moodHue = 0;
-        return "Cor alterada para vermelho 🔴";
-      },
-      'cor rosa': () => {
-        this.moodHue = 300;
-        return "Cor alterada para rosa 💖";
-      },
-      'cor aleatória': () => {
-        this.moodHue = Math.floor(Math.random() * 360);
-        return "Cor alterada aleatoriamente 🎨";
-      }
-    };
+    if (transcript.includes('mostrar data')) {
+      say(`Hoje é ${Utils.getCurrentDate()}.`);
+      return;
+    }
 
-    // Comandos de comportamento
-    const behaviorCommands = {
-      'aumentar tamanho': () => {
-        this.blobSize = Math.min(this.blobSize + 20, 200);
-        return `Tamanho aumentado para ${this.blobSize} ⬆️`;
-      },
-      'diminuir tamanho': () => {
-        this.blobSize = Math.max(this.blobSize - 20, 60);
-        return `Tamanho diminuído para ${this.blobSize} ⬇️`;
-      },
-      'aumentar velocidade': () => {
-        this.blobSpeed = Math.min(this.blobSpeed + 0.01, 0.05);
-        return `Velocidade aumentada 🏃`;
-      },
-      'diminuir velocidade': () => {
-        this.blobSpeed = Math.max(this.blobSpeed - 0.01, 0.005);
-        return `Velocidade diminuída 🚶`;
-      },
+    if (transcript.includes('mostrar hora')) {
+      say(`Agora são ${Utils.getCurrentTime()}.`);
+      return;
+    }
+
+    if (transcript.includes('ajuda') || transcript.includes('comandos')) {
+      say("Você pode dizer: 'Nova ativar', 'modo escuro', 'cor azul', 'dançar', 'mostrar hora'... e muito mais!");
+      return;
+    }
+
+    if (transcript.includes('modo festa')) {
+      say("Entrando no modo festa! 🎉");
+      this.blobSpeed = 0.05;
+      this.blobPulse = 40;
+      this.moodHue = Math.floor(Math.random() * 360);
+      return;
+    }
+
+    const commandSets = {
+      'modo escuro': () => (document.body.classList.add('dark'), "Modo escuro ativado 🌙"),
+      'modo claro': () => (document.body.classList.remove('dark'), "Modo claro ativado ☀️"),
+      'cor aleatória': () => (this.moodHue = Math.floor(Math.random() * 360), "Cor aleatória aplicada 🎨"),
       'resetar': () => {
-        this.moodHue = 180;
-        this.blobSize = 120;
-        this.blobSpeed = 0.01;
+        this.moodHue = 180; this.blobSize = 120; this.blobSpeed = 0.01;
         return "Configurações resetadas 🔄";
-      },
-      'dançar': () => {
-        this.blobSpeed = 0.03;
-        setTimeout(() => this.blobSpeed = 0.01, 3000);
-        return "Dançando! 💃";
       }
     };
 
-    // Processar comandos de aparência
-    for (const [command, action] of Object.entries(appearanceCommands)) {
+    for (const [command, action] of Object.entries(commandSets)) {
       if (transcript.includes(command)) {
-        const response = action();
-        this.updateDialogueBox(`Nova: ${response}`);
+        say(action());
         return;
       }
     }
 
-    // Processar comandos de comportamento
-    for (const [command, action] of Object.entries(behaviorCommands)) {
-      if (transcript.includes(command)) {
-        const response = action();
-        this.updateDialogueBox(`Nova: ${response}`);
-        return;
-      }
-    }
-
-    
-    const unknownResponses = [
-      "Não entendi, pode repetir?",
-      "Desculpe, não reconheci esse comando",
-      "Hmm, não sei como responder a isso",
-      "Você pode tentar outro comando?"
-    ];
-    const randomResponse = unknownResponses[Math.floor(Math.random() * unknownResponses.length)];
-    this.updateDialogueBox(`Nova: ${randomResponse}`);
+    const unknown = RESPONSES.unknown[Math.floor(Math.random() * RESPONSES.unknown.length)];
+    say(unknown);
   }
 
   updateDialogueBox(text) {
@@ -213,7 +242,8 @@ class AnimationManager {
     if (box) {
       box.textContent = text;
       box.style.opacity = '1';
-      setTimeout(() => box.style.opacity = '0', 3000);
+      clearTimeout(this.fadeTimeout);
+      this.fadeTimeout = setTimeout(() => (box.style.opacity = '0'), 4000);
     }
   }
 
@@ -230,13 +260,13 @@ class AnimationManager {
     ctx.beginPath();
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * Math.PI * 2;
-      const r = this.blobSize + this.noise(angle + this.t) * (this.blobSize/2);
+      const r = this.blobSize + this.noise(angle + this.t) * (this.blobSize / 2);
       const px = easeX + Math.cos(angle) * r;
       const py = easeY + Math.sin(angle) * r;
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.closePath();
-    
+
     const pulse = this.voiceActive ? Math.abs(Math.sin(this.t * 5)) * 20 + this.blobPulse : this.blobPulse;
     ctx.fillStyle = `hsl(${(this.moodHue + this.t * 40) % 360}, 80%, ${60 + pulse}%)`;
     ctx.shadowColor = theme === 'dark' ? '#fff' : '#000';
@@ -253,6 +283,7 @@ class AnimationManager {
   }
 }
 
+// init
 function init() {
   const canvasManager = new CanvasManager('canvas');
   const mouseTracker = new MouseTracker();
