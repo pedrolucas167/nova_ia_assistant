@@ -9,6 +9,10 @@
 - **🧩 Comandos Personalizáveis:** Adicione e configure novos comandos conforme sua necessidade.
 - **🖱️ Interface Animada:** Uma animação de blob orgânico reage ao movimento do mouse, tornando a interação mais imersiva.
 
+📹 Demonstração básica em Vídeo
+
+https://github.com/user-attachments/assets/8b8dbdbc-81ab-4146-8ecf-39a8997e7820
+
 ## 🔊 Funcionalidades de Voz
 
 - **Web Speech API:** Utiliza esta API para capturar e interpretar comandos de voz com precisão.
