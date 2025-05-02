@@ -1,37 +1,29 @@
 # Nova - Assistente Pessoal Interativo
 
-Olá, tudo bem?
+**Nova** é um assistente pessoal inteligente e interativo, projetado para facilitar tarefas do dia a dia através de comandos de voz e uma interface visual animada. Combinando inteligência artificial e animações dinâmicas, Nova proporciona uma experiência de uso personalizada, intuitiva e envolvente.
 
-**Nova** é um assistente pessoal interativo projetado para facilitar tarefas do dia a dia por meio de comandos de voz e uma interface visual dinâmica. Combinando animações envolventes e inteligência artificial, Nova é capaz de compreender e executar comandos de voz, proporcionando uma experiência personalizada e intuitiva para o usuário.
+## ✨ Principais Funcionalidades
 
-## Principais Funcionalidades
+- **🎙️ Reconhecimento de Voz:** Entende comandos em português, como "Que horas são?", "Abrir Google", ou "Buscar por [termo]".
+- **🧠 Respostas Inteligentes:** Retorna respostas em tempo real com voz sintetizada e animações visuais.
+- **🧩 Comandos Personalizáveis:** Adicione e configure novos comandos conforme sua necessidade.
+- **🖱️ Interface Animada:** Uma animação de blob orgânico reage ao movimento do mouse, tornando a interação mais imersiva.
 
-- **Reconhecimento de Comandos de Voz**: Nova entende comandos em **português**, permitindo realizar ações como abrir sites, buscar informações e responder perguntas.
-- **Interface Visual Animada**: Apresenta uma animação de **blob orgânico** que reage ao movimento do mouse, tornando a interação mais imersiva.
-- **Comandos Personalizáveis**: Configure comandos como "Que horas são?", "Abrir Google", "Buscar por [termo]" e muito mais.
-- **Respostas em Tempo Real**: Nova oferece feedback imediato com voz sintetizada e animações visuais para cada ação realizada.
+## 🔊 Funcionalidades de Voz
 
-## Funcionalidades de Voz
+- **Web Speech API:** Utiliza esta API para capturar e interpretar comandos de voz com precisão.
+- **Síntese de Fala:** Suporte a múltiplos idiomas, com voz sintetizada em português e inglês.
 
-- **Reconhecimento de Voz Avançado**: Utiliza a Web Speech API para capturar e interpretar comandos de voz com precisão.
-- **Síntese de Fala**: Responde com uma voz sintetizada configurável em diferentes idiomas, incluindo **português** e **inglês**.
+## 💻 Requisitos do Sistema
 
-## Requisitos do Sistema
+- **Navegador Compatível:** Funciona em navegadores modernos como Google Chrome ou Mozilla Firefox.
+- **Permissões:** É necessário permitir o uso do microfone para reconhecimento de voz.
+- **Dependências:** Web Speech API (nativa nos navegadores compatíveis).
 
-- **Navegador Compatível**: Funciona diretamente em navegadores modernos como **Google Chrome** e **Mozilla Firefox**.
-- **Web Speech API**: Dependência essencial para reconhecimento de voz e geração de respostas faladas.
+## 🚀 Como Instalar e Usar
 
-## Como Instalar
+1. Clone o repositório:
 
-Siga os passos abaixo para configurar o projeto localmente:
-
-1. Clone o repositório para sua máquina:
-
-    ```bash
-    git clone https://github.com/seu-usuario/nova-assistente.git
-    cd nova-assistente
-    ```
-
-2. Abra o arquivo `index.html` em seu navegador para começar a usar Nova.
-
-Pronto! Agora você pode explorar todas as funcionalidades do assistente pessoal Nova.
+   ```bash
+   git clone https://github.com/seu-usuario/nova-assistente.git
+   cd nova-assistente
