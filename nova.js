@@ -1,655 +1,684 @@
-// utils.js
-const Utils = {
+ // utils.js
+ const Utils = {
   getCurrentTime() {
-    const now = new Date();
-    return now.toLocaleTimeString('pt-BR');
+      return new Date().toLocaleTimeString('pt-BR', { hour12: false });
   },
 
   getCurrentDate() {
-    const now = new Date();
-    return now.toLocaleDateString('pt-BR');
+      return new Date().toLocaleDateString('pt-BR');
   },
 
   logInteraction(message, type = 'log') {
-    const colors = {
-      log: '#3498db',
-      command: '#2ecc71',
-      response: '#e67e22',
-      error: '#e74c3c'
-    };
-    console.log(`%c[Nova - ${Utils.getCurrentTime()}] ${message}`, `color: ${colors[type] || '#3498db'}`);
+      const colors = {
+          log: '#3498db',
+          command: '#2ecc71',
+          response: '#e67e22',
+          error: '#e74c3c',
+          voice: '#9b59b6',
+          api: '#1abc9c'
+      };
+      console.log(`%c[Nova - ${this.getCurrentTime()}] ${message}`, `color: ${colors[type] || '#3498db'}`);
   },
 
-  async fetchKnowledgeBase(query) {
-    try {
-      // In a real implementation, this would connect to an actual knowledge base
-      return new Promise(resolve => {
-        setTimeout(() => {
-          resolve(`Informação sobre "${query}" não encontrada no banco de dados local.`);
-        }, 500);
-      });
-    } catch (error) {
-      Utils.logInteraction(`Erro ao acessar conhecimento: ${error}`, 'error');
-      return null;
-    }
+  async fetchXAIResponse(query, context) {
+      try {
+          // Mock xAI API call (in production, use https://x.ai/api)
+          return new Promise(resolve => {
+              setTimeout(() => {
+                  const lowerQuery = query.toLowerCase();
+                  let response = {
+                      text: "Desculpe, não entendi completamente. Pode reformular?",
+                      intent: "unknown",
+                      confidence: 0.5
+                  };
+
+                  if (lowerQuery.includes('tempo') || lowerQuery.includes('clima')) {
+                      response = {
+                          text: "Não tenho dados meteorológicos em tempo real, mas posso sugerir verificar um app de clima ou falar sobre outra coisa!",
+                          intent: "weather",
+                          confidence: 0.9
+                      };
+                  } else if (lowerQuery.includes('notícia') || lowerQuery.includes('noticias')) {
+                      response = {
+                          text: "Não tenho acesso a notícias recentes, mas posso compartilhar uma curiosidade ou ajudar com outra pergunta!",
+                          intent: "news",
+                          confidence: 0.85
+                      };
+                  } else if (lowerQuery.includes('quem é') || lowerQuery.includes('quem foi')) {
+                      const topic = query.split(' ').slice(2).join(' ');
+                      response = {
+                          text: `Sobre ${topic}: Parece que você quer saber sobre uma pessoa ou personagem. Me conte mais ou pergunte algo específico!`,
+                          intent: "biography",
+                          confidence: 0.9
+                      };
+                  } else if (lowerQuery.includes('olá') || lowerQuery.includes('oi')) {
+                      response = {
+                          text: "Oi! Estou pronta para conversar sobre qualquer coisa. O que está na sua mente?",
+                          intent: "greeting",
+                          confidence: 0.95
+                      };
+                  } else if (lowerQuery.includes('piada')) {
+                      response = {
+                          text: "Por que o astronauta terminou com a namorada? Porque precisava de espaço!",
+                          intent: "joke",
+                          confidence: 0.9
+                      };
+                  } else if (context.length > 0 && context[context.length - 1].intent === "question") {
+                      response = {
+                          text: `Continuando nossa conversa, "${query}" é interessante! Não tenho uma resposta exata, mas posso explorar mais se você quiser.`,
+                          intent: "follow-up",
+                          confidence: 0.7
+                      };
+                  } else {
+                      response = {
+                          text: `Hmm, "${query}" é uma boa! Não tenho uma resposta precisa, mas posso pesquisar mais ou responder algo relacionado. O que acha?`,
+                          intent: "question",
+                          confidence: 0.6
+                      };
+                  }
+
+                  resolve(response);
+              }, 500);
+          });
+      } catch (error) {
+          this.logInteraction(`Erro na API xAI: ${error}`, 'error');
+          throw error;
+      }
+  },
+
+  tokenize(text) {
+      return text.toLowerCase().split(/\s+/).filter(token => token.length > 2);
+  },
+
+  calculateSimilarity(input, pattern) {
+      const inputTokens = this.tokenize(input);
+      const patternTokens = this.tokenize(pattern);
+      if (!inputTokens.length || !patternTokens.length) return 0;
+
+      let matches = 0;
+      for (const inputToken of inputTokens) {
+          for (const patternToken of patternTokens) {
+              const distance = this.levenshteinDistance(inputToken, patternToken);
+              if (distance / Math.max(inputToken.length, patternToken.length) < 0.3) {
+                  matches++;
+                  break;
+              }
+          }
+      }
+      return matches / Math.max(inputTokens.length, patternTokens.length);
   },
 
   levenshteinDistance(a, b) {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
+      const matrix = Array(b.length + 1).fill().map(() => Array(a.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+      for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
 
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
-
-    for (let i = 0; i <= a.length; i++) {
-      matrix[0][i] = i;
-    }
-
-    for (let j = 0; j <= b.length; j++) {
-      matrix[j][0] = j;
-    }
-
-    for (let j = 1; j <= b.length; j++) {
-      for (let i = 1; i <= a.length; i++) {
-        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1,
-          matrix[j - 1][i] + 1,
-          matrix[j - 1][i - 1] + cost
-        );
+      for (let j = 1; j <= b.length; j++) {
+          for (let i = 1; i <= a.length; i++) {
+              matrix[j][i] = Math.min(
+                  matrix[j][i - 1] + 1,
+                  matrix[j - 1][i] + 1,
+                  matrix[j - 1][i - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+              );
+          }
       }
-    }
-
-    return matrix[b.length][a.length];
+      return matrix[b.length][a.length];
   }
 };
 
 // constants.js
 const RESPONSES = {
   greetings: [
-    "Olá! Sou a Nova, sua assistente visual inteligente. Como posso ajudar?",
-    "Oi! Tudo bem com você hoje?",
-    "Olá! Pronta para interagir com você!"
+      "Olá! Sou a Nova, sua IA visual inteligente. Pergunte qualquer coisa!",
+      "Oi! Pronta para explorar o universo com você!",
+      "E aí! O que vamos conversar hoje?"
   ],
   unknown: [
-    "Não entendi completamente. Poderia reformular?",
-    "Desculpe, meu conhecimento ainda não cobre isso. Quer tentar outra coisa?",
-    "Hmm, não tenho uma resposta para isso no momento. Que tal perguntar algo diferente?"
+      "Hmm, isso é novo para mim. Pode explicar mais?",
+      "Não sei essa, mas posso tentar ajudar de outra forma!",
+      "Ops, não entendi. Quer tentar outra pergunta?"
   ],
   affirmations: [
-    "Claro, posso ajudar com isso!",
-    "Entendi, vamos lá!",
-    "Ótimo, aqui está o que você pediu."
+      "Entendido, vamos resolver isso!",
+      "Ok, estou com você!",
+      "Perfeito, bora lá!"
   ],
   moods: {
-    happy: { hue: 120, speed: 0.02, size: 130 },
-    calm: { hue: 240, speed: 0.008, size: 110 },
-    excited: { hue: 0, speed: 0.05, size: 150 }
+      happy: { hue: 120, speed: 0.02, size: 130 },
+      calm: { hue: 240, speed: 0.008, size: 110 },
+      excited: { hue: 0, speed: 0.05, size: 150 }
   }
 };
 
 const COMMANDS = {
-  basic: {
-    'olá|oi|e aí': () => RESPONSES.greetings[Math.floor(Math.random() * RESPONSES.greetings.length)],
-    'quem é você|se apresenta': () => "Sou a Nova, sua IA visual e interativa. Posso responder perguntas, ajudar com tarefas e interagir de forma dinâmica! 🤖",
-    'hora|que horas são': () => `Agora são ${Utils.getCurrentTime()}.`,
-    'data|que dia é hoje': () => `Hoje é ${Utils.getCurrentDate()}.`,
-    'ajuda|comandos': () => "Aqui estão alguns comandos que conheço:\n- 'Nova ativar/desativar'\n- 'modo escuro/claro'\n- 'cor aleatória'\n- 'pesquise sobre X'\n- 'como está seu humor?'\n- 'conte uma piada'\n- 'modo festa/calmo'",
-    'obrigado|valeu': () => "De nada! Estou aqui para ajudar. 😊"
-  },
   actions: {
-    'modo festa': () => { return { response: "Entrando no modo festa! 🎉", action: 'setMood', params: 'excited' }; },
-    'modo calmo': () => { return { response: "Ativando ambiente calmo... 🧘", action: 'setMood', params: 'calm' }; },
-    'modo normal': () => { return { response: "Voltando ao normal...", action: 'setMood', params: 'happy' }; },
-    'modo escuro|ativa o modo escuro': () => { return { response: "Modo escuro ativado 🌙", action: 'setTheme', params: 'dark' }; },
-    'modo claro|ativa o modo claro': () => { return { response: "Modo claro ativado ☀️", action: 'setTheme', params: 'light' }; },
-    'cor aleatória|muda a cor': () => { return { response: "Mudando para uma cor aleatória 🎨", action: 'randomColor' }; },
-    'resetar|voltar ao normal': () => { return { response: "Configurações resetadas 🔄", action: 'resetSettings' }; },
-    'aumenta o tamanho|fica maior': () => { return { response: "Aumentando meu tamanho! 📈", action: 'changeSize', params: 20 }; },
-    'diminui o tamanho|fica menor': () => { return { response: "Reduzindo meu tamanho! 📉", action: 'changeSize', params: -20 }; }
-  },
-  knowledge: {
-    'pesquise sobre|quem é|o que é|onde fica': async (query) => {
-      const topic = query.split(' ').slice(2).join(' ');
-      const knowledge = await Utils.fetchKnowledgeBase(topic);
-      return `Sobre ${topic}: ${knowledge}`;
-    }
-  },
-  fun: {
-    'conte uma piada|me faça rir': () => {
-      const jokes = [
-        "Por que o computador foi ao médico? Porque tinha um vírus!",
-        "O que o zero disse para o oito? Belo cinto!",
-        "Como transformar um giz em uma cobra? É só colocar 'S' na frente!"
-      ];
-      return jokes[Math.floor(Math.random() * jokes.length)];
-    },
-    'como está seu humor|como você está': () => {
-      const moods = ["Estou ótima hoje!", "Me sentindo energética!", "Bem calminha...", "Pronta para ajudar!"];
-      return moods[Math.floor(Math.random() * moods.length)];
-    }
+      'modo festa': () => ({ response: "Festa ativada! 🎉", action: 'setMood', params: 'excited' }),
+      'modo calmo': () => ({ response: "Ambiente tranquilo ativado... 🧘", action: 'setMood', params: 'calm' }),
+      'modo normal': () => ({ response: "Voltando ao padrão...", action: 'setMood', params: 'happy' }),
+      'modo escuro': () => ({ response: "Modo escuro ligado 🌙", action: 'setTheme', params: 'dark' }),
+      'modo claro': () => ({ response: "Modo claro ligado ☀️", action: 'setTheme', params: 'light' }),
+      'cor aleatória': () => ({ response: "Nova cor escolhida! 🎨", action: 'randomColor' }),
+      'resetar': () => ({ response: "Tudo resetado! 🔄", action: 'resetSettings' }),
+      'aumenta o tamanho': () => ({ response: "Crescendo! 📈", action: 'changeSize', params: 20 }),
+      'diminui o tamanho': () => ({ response: "Encolhendo! 📉", action: 'changeSize', params: -20 })
   }
 };
 
-// canvas manager
+// canvasManager.js
 class CanvasManager {
   constructor(canvasId) {
-    this.canvas = document.getElementById(canvasId);
-    this.ctx = this.canvas.getContext('2d');
-    this.resize();
-    window.addEventListener('resize', () => this.resize());
-    this.particles = [];
-    this.initParticles(150);
-    this.gradientCache = {};
+      this.canvas = document.getElementById(canvasId);
+      this.ctx = this.canvas.getContext('2d');
+      this.particles = [];
+      this.gradientCache = {};
+      this.resize();
+      window.addEventListener('resize', () => this.resize());
+      this.initParticles();
   }
 
   resize() {
-    this.width = this.canvas.width = window.innerWidth;
-    this.height = this.canvas.height = window.innerHeight;
-    this.gradientCache = {}; // Clear gradient cache on resize
-  }
-
-  clear(theme) {
-    this.ctx.fillStyle = theme === 'dark' ? '#1a1a1a' : '#fff';
-    this.ctx.fillRect(0, 0, this.width, this.height);
-    this.drawParticles();
+      this.width = this.canvas.width = window.innerWidth;
+      this.height = this.canvas.height = window.innerHeight;
+      this.gradientCache = {};
   }
 
   initParticles(count = 150) {
-    this.particles = Array.from({ length: count }, () => ({
-      x: Math.random() * this.width,
-      y: Math.random() * this.height,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      radius: Math.random() * 3 + 1,
-      alpha: Math.random() * 0.5 + 0.1
-    }));
+      this.particles = Array.from({ length: count }, () => ({
+          x: Math.random() * this.width,
+          y: Math.random() * this.height,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          radius: Math.random() * 3 + 1,
+          alpha: Math.random() * 0.5 + 0.1
+      }));
+  }
+
+  clear(theme) {
+      this.ctx.fillStyle = theme === 'dark' ? '#1a1a1a' : '#fff';
+      this.ctx.fillRect(0, 0, this.width, this.height);
+      this.drawParticles();
   }
 
   drawParticles() {
-    const theme = document.body.classList.contains('dark') ? '#ccc' : '#333';
-    
-    // Create gradient if not cached
-    if (!this.gradientCache[theme]) {
-      const gradient = this.ctx.createRadialGradient(
-        this.width/2, this.height/2, 0,
-        this.width/2, this.height/2, Math.max(this.width, this.height)/2
-      );
-      gradient.addColorStop(0, theme === '#ccc' ? 'rgba(200,200,200,0.8)' : 'rgba(50,50,50,0.8)');
-      gradient.addColorStop(1, 'transparent');
-      this.gradientCache[theme] = gradient;
-    }
+      const theme = document.body.classList.contains('dark') ? '#ccc' : '#333';
+      if (!this.gradientCache[theme]) {
+          const gradient = this.ctx.createRadialGradient(
+              this.width / 2, this.height / 2, 0,
+              this.width / 2, this.height / 2, Math.max(this.width, this.height) / 2
+          );
+          gradient.addColorStop(0, theme === '#ccc' ? 'rgba(200,200,200,0.8)' : 'rgba(50,50,50,0.8)');
+          gradient.addColorStop(1, 'transparent');
+          this.gradientCache[theme] = gradient;
+      }
 
-    this.ctx.fillStyle = this.gradientCache[theme];
-    this.particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      
-      // Bounce off edges
-      if (p.x < 0 || p.x > this.width) p.vx *= -1;
-      if (p.y < 0 || p.y > this.height) p.vy *= -1;
-      
-      // Draw with varying alpha
-      this.ctx.globalAlpha = p.alpha;
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      this.ctx.fill();
-    });
-    this.ctx.globalAlpha = 1.0;
+      this.ctx.fillStyle = this.gradientCache[theme];
+      this.particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0 || p.x > this.width) p.vx *= -1;
+          if (p.y < 0 || p.y > this.height) p.vy *= -1;
+          this.ctx.globalAlpha = p.alpha;
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          this.ctx.fill();
+      });
+      this.ctx.globalAlpha = 1.0;
   }
 }
 
-// mouse tracker
+// mouseTracker.js
 class MouseTracker {
   constructor() {
-    this.x = window.innerWidth / 2;
-    this.y = window.innerHeight / 2;
-    this.targetX = this.x;
-    this.targetY = this.y;
-    this.ease = 0.05;
-    window.addEventListener('mousemove', (e) => this.update(e));
+      this.x = window.innerWidth / 2;
+      this.y = window.innerHeight / 2;
+      this.targetX = this.x;
+      this.targetY = this.y;
+      this.ease = 0.05;
+      window.addEventListener('mousemove', (e) => this.update(e));
   }
 
   update(event) {
-    this.targetX = event.clientX;
-    this.targetY = event.clientY;
+      this.targetX = event.clientX;
+      this.targetY = event.clientY;
   }
 
   smoothUpdate() {
-    const dx = this.targetX - this.x;
-    const dy = this.targetY - this.y;
-    this.x += dx * this.ease;
-    this.y += dy * this.ease;
+      this.x += (this.targetX - this.x) * this.ease;
+      this.y += (this.targetY - this.y) * this.ease;
   }
 }
 
-// AI Processor
+// voiceProcessor.js
+class VoiceProcessor {
+  constructor(animationManager) {
+      this.animationManager = animationManager;
+      this.recognition = null;
+      this.isActive = false;
+      this.wakeWord = 'nova';
+      this.confidenceThreshold = 0.6;
+      this.commandBuffer = [];
+      this.setupRecognition();
+  }
+
+  setupRecognition() {
+      if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+          Utils.logInteraction('Reconhecimento de voz não suportado', 'error');
+          this.animationManager.updateDialogueBox("Reconhecimento de voz não disponível. Use o texto!");
+          return;
+      }
+
+      this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      this.recognition.lang = 'pt-BR';
+      this.recognition.continuous = true;
+      this.recognition.interimResults = false;
+      this.recognition.maxAlternatives = 5;
+
+      this.recognition.onresult = (event) => this.handleResult(event);
+      this.recognition.onerror = (event) => this.handleError(event);
+      this.recognition.onend = () => this.handleEnd();
+      this.start();
+  }
+
+  start() {
+      try {
+          this.recognition.start();
+          Utils.logInteraction('Reconhecimento de voz iniciado', 'voice');
+      } catch (error) {
+          Utils.logInteraction(`Erro ao iniciar reconhecimento: ${error}`, 'error');
+      }
+  }
+
+  stop() {
+      if (this.recognition) {
+          this.recognition.stop();
+          Utils.logInteraction('Reconhecimento de voz pausado', 'voice');
+      }
+  }
+
+  handleResult(event) {
+      const result = event.results[event.results.length - 1];
+      if (!result.isFinal) return;
+
+      const alternatives = Array.from(result).map(alt => ({
+          transcript: alt.transcript.trim().toLowerCase(),
+          confidence: alt.confidence
+      }));
+
+      const bestMatch = alternatives.find(alt => alt.confidence >= this.confidenceThreshold) || alternatives[0];
+      if (!bestMatch) return;
+
+      const { transcript, confidence } = bestMatch;
+      Utils.logInteraction(`Voz detectada: "${transcript}" (confiança: ${confidence})`, 'voice');
+
+      if (transcript.includes(`${this.wakeWord} ativar`)) {
+          this.isActive = true;
+          this.animationManager.updateDialogueBox("Ouvindo seus comandos! 👂");
+          this.animationManager.blobPulse = 20;
+          setTimeout(() => this.animationManager.blobPulse = 0, 1000);
+          return;
+      }
+
+      if (transcript.includes(`${this.wakeWord} desativar`)) {
+          this.isActive = false;
+          this.animationManager.updateDialogueBox("Modo silencioso ativado 🤫");
+          this.stop();
+          return;
+      }
+
+      this.commandBuffer.push({ transcript, confidence, timestamp: Date.now() });
+      if (this.commandBuffer.length > 10) this.commandBuffer.shift();
+
+      this.processCommand(transcript);
+  }
+
+  async processCommand(transcript) {
+      const { response, action, params } = await this.animationManager.aiProcessor.processInput(transcript);
+      this.animationManager.updateDialogueBox(response);
+      if (action) {
+          this.animationManager.executeAction(action, params);
+      }
+  }
+
+  handleError(event) {
+      Utils.logInteraction(`Erro no reconhecimento: ${event.error}`, 'error');
+      if (event.error === 'no-speech' || event.error === 'network') {
+          this.start();
+      }
+  }
+
+  handleEnd() {
+      if (this.isActive) {
+          this.start();
+      }
+  }
+}
+
+// aiProcessor.js
 class AIProcessor {
   constructor(animationManager) {
-    this.animationManager = animationManager;
-    this.context = [];
-    this.maxContextLength = 5;
-    this.learningRate = 0.1;
-    this.commandWeights = {};
-    this.initializeWeights();
+      this.animationManager = animationManager;
+      this.context = [];
+      this.maxContextLength = 10; // Increased for better conversation flow
+      this.learningRate = 0.05;
+      this.intentWeights = {};
+      this.commandWeights = {};
+      this.initializeWeights();
   }
 
   initializeWeights() {
-    // Initialize weights for known commands
-    Object.keys(COMMANDS.basic).forEach(cmd => this.commandWeights[cmd] = 1.0);
-    Object.keys(COMMANDS.actions).forEach(cmd => this.commandWeights[cmd] = 1.0);
-    Object.keys(COMMANDS.knowledge).forEach(cmd => this.commandWeights[cmd] = 1.0);
-    Object.keys(COMMANDS.fun).forEach(cmd => this.commandWeights[cmd] = 1.0);
+      Object.keys(COMMANDS.actions).forEach(cmd => {
+          this.commandWeights[cmd] = 1.0;
+      });
+      ['gre RFCing', 'question', 'command', 'joke', 'weather', 'news', 'biography', 'follow-up', 'unknown'].forEach(intent => {
+          this.intentWeights[intent] = 1.0;
+      });
   }
 
-  addContext(message, isUser = true) {
-    this.context.push({
-      text: message,
-      isUser,
-      time: new Date().toISOString()
-    });
-    
-    if (this.context.length > this.maxContextLength) {
-      this.context.shift();
-    }
+  addContext(message, isUser, intent = 'unknown') {
+      this.context.push({
+          text: message,
+          isUser,
+          intent,
+          time: new Date().toISOString()
+      });
+      if (this.context.length > this.maxContextLength) {
+          this.context.shift();
+      }
   }
 
-  findBestMatch(input) {
-    let bestMatch = { command: null, confidence: 0, type: null };
-    
-    // Check all command categories
-    const categories = ['basic', 'actions', 'knowledge', 'fun'];
-    categories.forEach(category => {
-      Object.keys(COMMANDS[category]).forEach(pattern => {
-        const regex = new RegExp(pattern.split('|').join('|'), 'i');
-        if (regex.test(input)) {
-          const confidence = this.commandWeights[pattern] || 1.0;
-          if (confidence > bestMatch.confidence) {
-            bestMatch = { 
-              command: pattern, 
-              confidence, 
-              type: category,
-              original: input.match(regex)[0]
-            };
+  findActionCommand(input) {
+      let bestMatch = { command: null, confidence: 0 };
+      Object.keys(COMMANDS.actions).forEach(pattern => {
+          const regex = new RegExp(pattern.split('|').join('|'), 'i');
+          if (regex.test(input)) {
+              const confidence = (this.commandWeights[pattern] || 1.0);
+              if (confidence > bestMatch.confidence) {
+                  bestMatch = { command: pattern, confidence, original: input.match(regex)[0] };
+              }
           }
-        }
       });
-    });
 
-    // If no direct match, try fuzzy matching
-    if (bestMatch.confidence === 0) {
-      categories.forEach(category => {
-        Object.keys(COMMANDS[category]).forEach(pattern => {
-          const alternatives = pattern.split('|');
-          for (const alt of alternatives) {
-            const distance = Utils.levenshteinDistance(input.toLowerCase(), alt.toLowerCase());
-            const similarity = 1 - (distance / Math.max(input.length, alt.length));
-            
-            if (similarity > 0.7 && similarity > bestMatch.confidence) {
-              bestMatch = {
-                command: pattern,
-                confidence: similarity * (this.commandWeights[pattern] || 1.0),
-                type: category,
-                original: alt
-              };
-            }
-          }
-        });
-      });
-    }
+      if (bestMatch.confidence < 0.5) {
+          Object.keys(COMMANDS.actions).forEach(pattern => {
+              const similarity = Utils.calculateSimilarity(input, pattern);
+              const confidence = similarity * (this.commandWeights[pattern] || 1.0);
+              if (confidence > bestMatch.confidence) {
+                  bestMatch = { command: pattern, confidence, original: pattern.split('|')[0] };
+              }
+          });
+      }
 
-    return bestMatch;
+      return bestMatch;
   }
 
   async processInput(input) {
-    this.addContext(input, true);
-    Utils.logInteraction(`Processando: "${input}"`, 'command');
-    
-    const { command, confidence, type, original } = this.findBestMatch(input);
-    
-    if (!command) {
-      const response = RESPONSES.unknown[Math.floor(Math.random() * RESPONSES.unknown.length)];
-      this.addContext(response, false);
-      return { response, action: null };
-    }
+      this.addContext(input, true);
+      Utils.logInteraction(`Processando: "${input}"`, 'command');
 
-    // Update weights - reward correct matches
-    this.commandWeights[command] = (this.commandWeights[command] || 1.0) + this.learningRate;
-    
-    try {
-      let response;
-      let action = null;
-      let params = null;
-      
-      if (type === 'knowledge') {
-        const query = input.replace(original, '').trim();
-        response = await COMMANDS[type][command](query);
-      } else {
-        const result = COMMANDS[type][command]();
-        if (typeof result === 'object') {
-          response = result.response;
-          action = result.action;
-          params = result.params;
-        } else {
-          response = result;
-        }
+      // Check for action commands first
+      const actionMatch = this.findActionCommand(input);
+      if (actionMatch.command && actionMatch.confidence > 0.7) {
+          this.commandWeights[actionMatch.command] = (this.commandWeights[actionMatch.command] || 1.0) + this.learningRate;
+          const result = COMMANDS.actions[actionMatch.command]();
+          const { response, action, params } = result;
+          this.addContext(response, false, 'command');
+          Utils.logInteraction(`Resposta: "${response}"`, 'response');
+          return { response, action, params };
       }
-      
-      this.addContext(response, false);
-      Utils.logInteraction(`Resposta: "${response}"`, 'response');
-      
-      return { response, action, params };
-    } catch (error) {
-      Utils.logInteraction(`Erro ao processar comando: ${error}`, 'error');
-      const response = "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.";
-      this.addContext(response, false);
-      return { response, action: null };
-    }
+
+      // Call xAI API for natural language processing
+      try {
+          const xaiResponse = await Utils.fetchXAIResponse(input, this.context);
+          const { text, intent, confidence } = xaiResponse;
+
+          this.intentWeights[intent] = (this.intentWeights[intent] || 1.0) + this.learningRate * confidence;
+          this.addContext(text, false, intent);
+          Utils.logInteraction(`Resposta xAI: "${text}" (intent: ${intent}, confiança: ${confidence})`, 'api');
+
+          // Map certain intents to visual actions
+          let action = null;
+          let params = null;
+          if (intent === 'joke' || intent === 'greeting') {
+              action = 'setMood';
+              params = 'happy';
+          } else if (intent === 'question' || intent === 'follow-up') {
+              action = 'setMood';
+              params = 'calm';
+          }
+
+          return { response: text, action, params };
+      } catch (error) {
+          const response = "Ops, algo deu errado ao processar sua solicitação. Tente novamente!";
+          this.addContext(response, false, 'error');
+          Utils.logInteraction(`Erro: ${error}`, 'error');
+          return { response, action: null };
+      }
   }
 }
 
-// animation manager
+// animationManager.js
 class AnimationManager {
   constructor(canvasManager, mouseTracker) {
-    this.canvasManager = canvasManager;
-    this.mouseTracker = mouseTracker;
-    this.t = 0;
-    this.moodHue = 180;
-    this.voiceActive = false;
-    this.blobSize = 120;
-    this.blobSpeed = 0.01;
-    this.blobPulse = 0;
-    this.aiProcessor = new AIProcessor(this);
-    this.setupVoiceRecognition();
-    this.createDialogueBox();
-    this.createInputInterface();
-    this.applyAutoTheme();
-    this.currentMood = 'happy';
+      this.canvasManager = canvasManager;
+      this.mouseTracker = mouseTracker;
+      this.aiProcessor = new AIProcessor(this);
+      this.voiceProcessor = new VoiceProcessor(this);
+      this.t = 0;
+      this.moodHue = 180;
+      this.blobSize = 120;
+      this.blobSpeed = 0.01;
+      this.blobPulse = 0;
+      this.currentMood = 'happy';
+      this.setupUI();
+      this.applyAutoTheme();
   }
 
   applyAutoTheme() {
-    const hour = new Date().getHours();
-    if (hour < 6 || hour >= 18) {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
+      const hour = new Date().getHours();
+      document.body.classList.toggle('dark', hour < 6 || hour >= 18);
+  }
+
+  setupUI() {
+      this.createDialogueBox();
+      this.createInputInterface();
   }
 
   createDialogueBox() {
-    const box = document.createElement('div');
-    box.id = 'dialogue-box';
-    Object.assign(box.style, {
-      position: 'fixed',
-      bottom: '80px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      padding: '15px 25px',
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      color: 'white',
-      borderRadius: '25px',
-      maxWidth: '80%',
-      minWidth: '300px',
-      textAlign: 'center',
-      transition: 'all 0.3s ease',
-      opacity: '0',
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
-      fontSize: '16px',
-      pointerEvents: 'none',
-      backdropFilter: 'blur(10px)',
-      boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
-    });
-    document.body.appendChild(box);
+      const box = document.createElement('div');
+      box.id = 'dialogue-box';
+      Object.assign(box.style, {
+          position: 'fixed',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '15px 25px',
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          borderRadius: '25px',
+          maxWidth: '80%',
+          minWidth: '300px',
+          textAlign: 'center',
+          transition: 'all 0.3s ease',
+          opacity: '0',
+          fontFamily: "'Segoe UI', system-ui, sans-serif",
+          fontSize: '16px',
+          pointerEvents: 'none',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
+      });
+      document.body.appendChild(box);
   }
 
   createInputInterface() {
-    const container = document.createElement('div');
-    container.id = 'input-container';
-    Object.assign(container.style, {
-      position: 'fixed',
-      bottom: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      display: 'flex',
-      gap: '10px',
-      alignItems: 'center'
-    });
+      const container = document.createElement('div');
+      container.id = 'input-container';
+      Object.assign(container.style, {
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center'
+      });
 
-    const input = document.createElement('input');
-    input.id = 'user-input';
-    input.placeholder = 'Digite seu comando aqui...';
-    Object.assign(input.style, {
-      padding: '12px 20px',
-      borderRadius: '25px',
-      border: 'none',
-      width: '300px',
-      outline: 'none',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-      fontSize: '14px'
-    });
+      const input = document.createElement('input');
+      input.id = 'user-input';
+      input.placeholder = 'Fale ou digite qualquer coisa...';
+      Object.assign(input.style, {
+          padding: '12px 20px',
+          borderRadius: '25px',
+          border: 'none',
+          width: '300px',
+          outline: 'none',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          fontSize: '14px'
+      });
 
-    const button = document.createElement('button');
-    button.textContent = 'Enviar';
-    Object.assign(button.style, {
-      padding: '12px 20px',
-      borderRadius: '25px',
-      border: 'none',
-      background: 'linear-gradient(135deg, #6e8efb, #a777e3)',
-      color: 'white',
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-      transition: 'transform 0.2s'
-    });
+      const button = document.createElement('button');
+      button.textContent = 'Enviar';
+      Object.assign(button.style, {
+          padding: '12px 20px',
+          borderRadius: '25px',
+          border: 'none',
+          background: 'linear-gradient(135deg, #6e8efb, #a777e3)',
+          color: 'white',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          transition: 'transform 0.2s'
+      });
 
-    button.addEventListener('click', () => this.handleTextInput());
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') this.handleTextInput();
-    });
+      button.addEventListener('click', () => this.handleTextInput());
+      input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.handleTextInput();
+      });
 
-    button.addEventListener('mousedown', () => {
-      button.style.transform = 'scale(0.95)';
-    });
-    button.addEventListener('mouseup', () => {
-      button.style.transform = 'scale(1)';
-    });
+      button.addEventListener('mousedown', () => button.style.transform = 'scale(0.95)');
+      button.addEventListener('mouseup', () => button.style.transform = 'scale(1)');
 
-    container.appendChild(input);
-    container.appendChild(button);
-    document.body.appendChild(container);
+      container.appendChild(input);
+      container.appendChild(button);
+      document.body.appendChild(container);
   }
 
   async handleTextInput() {
-    const input = document.getElementById('user-input');
-    const text = input.value.trim();
-    if (!text) return;
+      const input = document.getElementById('user-input');
+      const text = input.value.trim();
+      if (!text) return;
 
-    input.value = '';
-    const { response, action, params } = await this.aiProcessor.processInput(text);
-    this.updateDialogueBox(response);
-    
-    if (action) {
-      this.executeAction(action, params);
-    }
+      input.value = '';
+      const { response, action, params } = await this.aiProcessor.processInput(text);
+      this.updateDialogueBox(response);
+      if (action) {
+          this.executeAction(action, params);
+      }
   }
 
   executeAction(action, params) {
-    switch (action) {
-      case 'setMood':
-        this.setMood(params);
-        break;
-      case 'setTheme':
-        document.body.classList.toggle('dark', params === 'dark');
-        break;
-      case 'randomColor':
-        this.moodHue = Math.floor(Math.random() * 360);
-        break;
-      case 'resetSettings':
-        this.moodHue = 180;
-        this.blobSize = 120;
-        this.blobSpeed = 0.01;
-        this.setMood('happy');
-        break;
-      case 'changeSize':
-        this.blobSize = Math.max(80, Math.min(200, this.blobSize + params));
-        break;
-    }
+      switch (action) {
+          case 'setMood':
+              this.setMood(params);
+              break;
+          case 'setTheme':
+              document.body.classList.toggle('dark', params === 'dark');
+              break;
+          case 'randomColor':
+              this.moodHue = Math.floor(Math.random() * 360);
+              break;
+          case 'resetSettings':
+              this.moodHue = 180;
+              this.blobSize = 120;
+              this.blobSpeed = 0.01;
+              this.setMood('happy');
+              break;
+          case 'changeSize':
+              this.blobSize = Math.max(80, Math.min(200, this.blobSize + params));
+              break;
+      }
   }
 
   setMood(mood) {
-    this.currentMood = mood;
-    const moodSettings = RESPONSES.moods[mood] || RESPONSES.moods.happy;
-    this.moodHue = moodSettings.hue;
-    this.blobSpeed = moodSettings.speed;
-    this.blobSize = moodSettings.size;
-    this.blobPulse = 10;
-    setTimeout(() => this.blobPulse = 0, 1000);
-  }
-
-  setupVoiceRecognition() {
-    if (!('webkitSpeechRecognition' in window)) {
-      Utils.logInteraction('Reconhecimento de voz não suportado neste navegador', 'error');
-      return;
-    }
-
-    this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    this.recognition.lang = 'pt-BR';
-    this.recognition.continuous = true;
-    this.recognition.interimResults = false;
-    this.recognition.maxAlternatives = 3;
-
-    this.recognition.onresult = async (event) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim();
-      Utils.logInteraction(`Voz detectada: "${transcript}"`, 'command');
-
-      if (transcript.toLowerCase().includes('nova ativar')) {
-        this.voiceActive = true;
-        this.updateDialogueBox("Ativada e ouvindo 👂");
-        this.blobPulse = 20;
-        setTimeout(() => this.blobPulse = 0, 1000);
-        return;
-      }
-
-      if (transcript.toLowerCase().includes('nova desativar')) {
-        this.voiceActive = false;
-        this.updateDialogueBox("Em modo silencioso 🤫");
-        return;
-      }
-
-      if (!this.voiceActive) return;
-
-      const { response, action, params } = await this.aiProcessor.processInput(transcript);
-      this.updateDialogueBox(response);
-      
-      if (action) {
-        this.executeAction(action, params);
-      }
-    };
-
-    this.recognition.onerror = (event) => {
-      Utils.logInteraction(`Erro no reconhecimento de voz: ${event.error}`, 'error');
-      if (event.error === 'no-speech') {
-        this.recognition.start();
-      }
-    };
-
-    this.recognition.onend = () => {
-      if (this.voiceActive) {
-        this.recognition.start();
-      }
-    };
-
-    this.recognition.start();
+      this.currentMood = mood;
+      const moodSettings = RESPONSES.moods[mood] || RESPONSES.moods.happy;
+      this.moodHue = moodSettings.hue;
+      this.blobSpeed = moodSettings.speed;
+      this.blobSize = moodSettings.size;
+      this.blobPulse = 10;
+      setTimeout(() => this.blobPulse = 0, 1000);
   }
 
   updateDialogueBox(text) {
-    const box = document.getElementById('dialogue-box');
-    if (box) {
-      box.innerHTML = text.replace(/\n/g, '<br>');
-      box.style.opacity = '1';
-      box.style.bottom = '80px';
-      
-      clearTimeout(this.fadeTimeout);
-      this.fadeTimeout = setTimeout(() => {
-        box.style.opacity = '0';
-        box.style.bottom = '60px';
-      }, 5000);
-    }
+      const box = document.getElementById('dialogue-box');
+      if (box) {
+          box.innerHTML = text.replace(/\n/g, '<br>');
+          box.style.opacity = '1';
+          box.style.bottom = '80px';
+          clearTimeout(this.fadeTimeout);
+          this.fadeTimeout = setTimeout(() => {
+              box.style.opacity = '0';
+              box.style.bottom = '60px';
+          }, 5000);
+      }
   }
 
   noise(x) {
-    return (Math.sin(x * 2.1) + Math.sin(x * 0.7) + Math.sin(x * 1.3)) / 3;
+      return (Math.sin(x * 2.1) + Math.sin(x * 0.7) + Math.sin(x * 1.3)) / 3;
   }
 
   drawBlob(theme) {
-    const { ctx } = this.canvasManager;
-    this.mouseTracker.smoothUpdate();
-    const easeX = this.canvasManager.width / 2 + (this.mouseTracker.x - this.canvasManager.width / 2) * 0.05;
-    const easeY = this.canvasManager.height / 2 + (this.mouseTracker.y - this.canvasManager.height / 2) * 0.05;
-    const segments = 120;
+      const { ctx } = this.canvasManager;
+      this.mouseTracker.smoothUpdate();
+      const easeX = this.canvasManager.width / 2 + (this.mouseTracker.x - this.canvasManager.width / 2) * 0.05;
+      const easeY = this.canvasManager.height / 2 + (this.mouseTracker.y - this.canvasManager.height / 2) * 0.05;
+      const segments = 120;
 
-    // Create blob path
-    ctx.beginPath();
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      const noiseFactor = this.noise(angle * 2 + this.t) * 0.5 + 0.5;
-      const r = this.blobSize * (0.8 + noiseFactor * 0.4) + this.blobPulse;
-      const px = easeX + Math.cos(angle) * r;
-      const py = easeY + Math.sin(angle) * r;
-      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-    }
-    ctx.closePath();
+      ctx.beginPath();
+      for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * Math.PI * 2;
+          const noiseFactor = this.noise(angle * 2 + this.t) * 0.5 + 0.5;
+          const r = this.blobSize * (0.8 + noiseFactor * 0.4) + this.blobPulse;
+          const px = easeX + Math.cos(angle) * r;
+          const py = easeY + Math.sin(angle) * r;
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
 
-    // Create gradient
-    const gradient = ctx.createRadialGradient(
-      easeX, easeY, 0,
-      easeX, easeY, this.blobSize * 1.5
-    );
-    const pulse = this.voiceActive ? Math.abs(Math.sin(this.t * 5)) * 20 + this.blobPulse : this.blobPulse;
-    const hue = (this.moodHue + this.t * 40) % 360;
-    gradient.addColorStop(0, `hsla(${hue}, 80%, ${60 + pulse}%, 0.9)`);
-    gradient.addColorStop(1, `hsla(${(hue + 30) % 360}, 80%, ${50 + pulse}%, 0.5)`);
+      const gradient = ctx.createRadialGradient(
+          easeX, easeY, 0,
+          easeX, easeY, this.blobSize * 1.5
+      );
+      const pulse = this.voiceProcessor.isActive ? Math.abs(Math.sin(this.t * 5)) * 20 + this.blobPulse : this.blobPulse;
+      const hue = (this.moodHue + this.t * 40) % 360;
+      gradient.addColorStop(0, `hsla(${hue}, 80%, ${60 + pulse}%, 0.9)`);
+      gradient.addColorStop(1, `hsla(${(hue + 30) % 360}, 80%, ${50 + pulse}%, 0.5)`);
 
-    // Draw blob with shadow
-    ctx.fillStyle = gradient;
-    ctx.shadowColor = `hsla(${hue}, 80%, 50%, 0.5)`;
-    ctx.shadowBlur = 40;
-    ctx.fill();
-    ctx.shadowBlur = 0;
+      ctx.fillStyle = gradient;
+      ctx.shadowColor = `hsla(${hue}, 80%, 50%, 0.5)`;
+      ctx.shadowBlur = 40;
+      ctx.fill();
+      ctx.shadowBlur = 0;
 
-    // Draw inner glow
-    ctx.strokeStyle = `hsla(${hue}, 100%, 80%, 0.3)`;
-    ctx.lineWidth = 10;
-    ctx.stroke();
+      ctx.strokeStyle = `hsla(${hue}, 100%, 80%, 0.3)`;
+      ctx.lineWidth = 10;
+      ctx.stroke();
   }
 
   animate() {
-    const theme = document.body.classList.contains('dark') ? 'dark' : 'light';
-    this.canvasManager.clear(theme);
-    this.t += this.blobSpeed;
-    this.drawBlob(theme);
-    requestAnimationFrame(() => this.animate());
+      const theme = document.body.classList.contains('dark') ? 'dark' : 'light';
+      this.canvasManager.clear(theme);
+      this.t += this.blobSpeed;
+      this.drawBlob(theme);
+      requestAnimationFrame(() => this.animate());
   }
 }
 
-// init
+// main.js
 function init() {
   const canvasManager = new CanvasManager('canvas');
   const mouseTracker = new MouseTracker();
   const animationManager = new AnimationManager(canvasManager, mouseTracker);
   animationManager.animate();
-
-  // Add style for dark mode transition
-  const style = document.createElement('style');
-  style.textContent = `
-    body {
-      transition: background-color 0.5s ease;
-    }
-    body.dark {
-      background-color: #121212;
-      color: #f0f0f0;
-    }
-  `;
-  document.head.appendChild(style);
 }
 
-document.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', init);
