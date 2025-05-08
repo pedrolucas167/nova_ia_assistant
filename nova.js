@@ -250,7 +250,7 @@ class MouseTracker {
 
 // voiceProcessor.js
 class VoiceProcessor {
-  constructor(animationManager) {
+    constructor(animationManager) {
       this.animationManager = animationManager;
       this.recognition = null;
       this.isActive = false;
@@ -258,100 +258,106 @@ class VoiceProcessor {
       this.confidenceThreshold = 0.6;
       this.commandBuffer = [];
       this.setupRecognition();
-  }
-
-  setupRecognition() {
+    }
+  
+    setupRecognition() {
+      // Check for speech recognition support
       if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
-          Utils.logInteraction('Reconhecimento de voz não suportado', 'error');
-          this.animationManager.updateDialogueBox("Reconhecimento de voz não disponível. Use o texto!");
-          return;
+        Utils.logInteraction('Voice recognition not supported', 'error');
+        this.animationManager.updateDialogueBox("Voice recognition unavailable. Use text input!");
+        return;
       }
-
+  
       this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       this.recognition.lang = 'pt-BR';
       this.recognition.continuous = true;
       this.recognition.interimResults = false;
       this.recognition.maxAlternatives = 5;
-
+  
       this.recognition.onresult = (event) => this.handleResult(event);
       this.recognition.onerror = (event) => this.handleError(event);
       this.recognition.onend = () => this.handleEnd();
       this.start();
-  }
-
-  start() {
+    }
+  
+    start() {
+      // Start voice recognition
       try {
-          this.recognition.start();
-          Utils.logInteraction('Reconhecimento de voz iniciado', 'voice');
+        this.recognition.start();
+        Utils.logInteraction('Voice recognition started', 'voice');
       } catch (error) {
-          Utils.logInteraction(`Erro ao iniciar reconhecimento: ${error}`, 'error');
+        Utils.logInteraction(`Voice recognition error: ${error}`, 'error');
       }
-  }
-
-  stop() {
+    }
+  
+    stop() {
+      // Stop voice recognition
       if (this.recognition) {
-          this.recognition.stop();
-          Utils.logInteraction('Reconhecimento de voz pausado', 'voice');
+        this.recognition.stop();
+        Utils.logInteraction('Voice recognition paused', 'voice');
       }
-  }
-
-  handleResult(event) {
+    }
+  
+    handleResult(event) {
       const result = event.results[event.results.length - 1];
       if (!result.isFinal) return;
-
+  
       const alternatives = Array.from(result).map(alt => ({
-          transcript: alt.transcript.trim().toLowerCase(),
-          confidence: alt.confidence
+        transcript: alt.transcript.trim().toLowerCase(),
+        confidence: alt.confidence
       }));
-
+  
       const bestMatch = alternatives.find(alt => alt.confidence >= this.confidenceThreshold) || alternatives[0];
       if (!bestMatch) return;
-
+  
       const { transcript, confidence } = bestMatch;
-      Utils.logInteraction(`Voz detectada: "${transcript}" (confiança: ${confidence})`, 'voice');
-
+      Utils.logInteraction(`Voice detected: "${transcript}" (confidence: ${confidence})`, 'voice');
+  
       if (transcript.includes(`${this.wakeWord} ativar`)) {
-          this.isActive = true;
-          this.animationManager.updateDialogueBox("Ouvindo seus comandos! 👂");
-          this.animationManager.blobPulse = 20;
-          setTimeout(() => this.animationManager.blobPulse = 0, 1000);
-          return;
+        this.isActive = true;
+        this.animationManager.updateDialogueBox("Listening to commands! 👂");
+        this.animationManager.blobPulse = 20;
+        setTimeout(() => this.animationManager.blobPulse = 0, 1000);
+        return;
       }
-
+  
       if (transcript.includes(`${this.wakeWord} desativar`)) {
-          this.isActive = false;
-          this.animationManager.updateDialogueBox("Modo silencioso ativado 🤫");
-          this.stop();
-          return;
+        this.isActive = false;
+        this.animationManager.updateDialogueBox("Silent mode activated 🤫");
+        this.stop();
+        return;
       }
-
+  
       this.commandBuffer.push({ transcript, confidence, timestamp: Date.now() });
       if (this.commandBuffer.length > 10) this.commandBuffer.shift();
-
+  
       this.processCommand(transcript);
-  }
-
-  async processCommand(transcript) {
+    }
+  
+    async processCommand(transcript) {
+      // Process recognized command
       const { response, action, params } = await this.animationManager.aiProcessor.processInput(transcript);
       this.animationManager.updateDialogueBox(response);
       if (action) {
-          this.animationManager.executeAction(action, params);
+        this.animationManager.executeAction(action, params);
       }
-  }
-
-  handleError(event) {
-      Utils.logInteraction(`Erro no reconhecimento: ${event.error}`, 'error');
+    }
+  
+    handleError(event) {
+      // Handle recognition errors
+      Utils.logInteraction(`Recognition error: ${event.error}`, 'error');
       if (event.error === 'no-speech' || event.error === 'network') {
-          this.start();
+        this.start();
       }
-  }
-
-  handleEnd() {
+    }
+  
+    handleEnd() {
+      // Restart recognition if active
       if (this.isActive) {
-          this.start();
+        this.start();
       }
+    }
   }
-}
 
 // aiProcessor.js
 class AIProcessor {
