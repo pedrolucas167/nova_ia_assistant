@@ -464,7 +464,7 @@ class AIProcessor {
 
 // animationManager.js
 class AnimationManager {
-  constructor(canvasManager, mouseTracker) {
+    constructor(canvasManager, mouseTracker) {
       this.canvasManager = canvasManager;
       this.mouseTracker = mouseTracker;
       this.aiProcessor = new AIProcessor(this);
@@ -475,136 +475,144 @@ class AnimationManager {
       this.blobSpeed = 0.01;
       this.blobPulse = 0;
       this.currentMood = 'happy';
+      this.speechSynthesis = window.speechSynthesis;
       this.setupUI();
       this.applyAutoTheme();
-  }
-
-  applyAutoTheme() {
+    }
+  
+    applyAutoTheme() {
+      // Set theme based on time
       const hour = new Date().getHours();
       document.body.classList.toggle('dark', hour < 6 || hour >= 18);
-  }
-
-  setupUI() {
+    }
+  
+    setupUI() {
       this.createDialogueBox();
       this.createInputInterface();
-  }
-
-  createDialogueBox() {
+    }
+  
+    createDialogueBox() {
+      // Create dialogue box element
       const box = document.createElement('div');
       box.id = 'dialogue-box';
       Object.assign(box.style, {
-          position: 'fixed',
-          bottom: '80px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          padding: '15px 25px',
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          borderRadius: '25px',
-          maxWidth: '80%',
-          minWidth: '300px',
-          textAlign: 'center',
-          transition: 'all 0.3s ease',
-          opacity: '0',
-          fontFamily: "'Segoe UI', system-ui, sans-serif",
-          fontSize: '16px',
-          pointerEvents: 'none',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
+        position: 'fixed',
+        bottom: '80px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        padding: '15px 25px',
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        color: 'white',
+        borderRadius: '25px',
+        maxWidth: '80%',
+        minWidth: '300px',
+        textAlign: 'center',
+        transition: 'all 0.3s ease',
+        opacity: '0',
+        fontFamily: "'Segoe UI', system-ui, sans-serif",
+        fontSize: '16px',
+        pointerEvents: 'none',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
       });
       document.body.appendChild(box);
-  }
-
-  createInputInterface() {
+    }
+  
+    createInputInterface() {
+      // Create input interface
       const container = document.createElement('div');
       container.id = 'input-container';
       Object.assign(container.style, {
-          position: 'fixed',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'center'
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: '10px',
+        alignItems: 'center'
       });
-
+  
       const input = document.createElement('input');
       input.id = 'user-input';
       input.placeholder = 'Fale ou digite qualquer coisa...';
       Object.assign(input.style, {
-          padding: '12px 20px',
-          borderRadius: '25px',
-          border: 'none',
-          width: '300px',
-          outline: 'none',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          fontSize: '14px'
+        padding: '12px 20px',
+        borderRadius: '25px',
+        border: 'none',
+        width: '300px',
+        outline: 'none',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        fontSize: '14px'
       });
-
+  
       const button = document.createElement('button');
       button.textContent = 'Enviar';
       Object.assign(button.style, {
-          padding: '12px 20px',
-          borderRadius: '25px',
-          border: 'none',
-          background: 'linear-gradient(135deg, #6e8efb, #a777e3)',
-          color: 'white',
-          cursor: 'pointer',
-          fontWeight: 'bold',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          transition: 'transform 0.2s'
+        padding: '12px 20px',
+        borderRadius: '25px',
+        border: 'none',
+        background: 'linear-gradient(135deg, #6e8efb, #a777e3)',
+        color: 'white',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        transition: 'transform 0.2s'
       });
-
+  
       button.addEventListener('click', () => this.handleTextInput());
       input.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') this.handleTextInput();
+        if (e.key === 'Enter') this.handleTextInput();
       });
-
+  
       button.addEventListener('mousedown', () => button.style.transform = 'scale(0.95)');
       button.addEventListener('mouseup', () => button.style.transform = 'scale(1)');
-
+  
       container.appendChild(input);
       container.appendChild(button);
       document.body.appendChild(container);
-  }
-
-  async handleTextInput() {
+    }
+  
+    async handleTextInput() {
+      // Process text input
       const input = document.getElementById('user-input');
       const text = input.value.trim();
       if (!text) return;
-
+  
       input.value = '';
       const { response, action, params } = await this.aiProcessor.processInput(text);
       this.updateDialogueBox(response);
+      this.speak(response);
       if (action) {
-          this.executeAction(action, params);
+        this.executeAction(action, params);
       }
-  }
-
-  executeAction(action, params) {
+    }
+  
+    executeAction(action, params) {
+      // Execute specified action
       switch (action) {
-          case 'setMood':
-              this.setMood(params);
-              break;
-          case 'setTheme':
-              document.body.classList.toggle('dark', params === 'dark');
-              break;
-          case 'randomColor':
-              this.moodHue = Math.floor(Math.random() * 360);
-              break;
-          case 'resetSettings':
-              this.moodHue = 180;
-              this.blobSize = 120;
-              this.blobSpeed = 0.01;
-              this.setMood('happy');
-              break;
-          case 'changeSize':
-              this.blobSize = Math.max(80, Math.min(200, this.blobSize + params));
-              break;
+        case 'setMood':
+          this.setMood(params);
+          break;
+        case 'setTheme':
+          document.body.classList.toggle('dark', params === 'dark');
+          break;
+        case 'randomColor':
+          this.moodHue = Math.floor(Math.random() * 360);
+          break;
+        case 'resetSettings':
+          this.moodHue = 180;
+          this.blobSize = 120;
+          this.blobSpeed = 0.01;
+          this.setMood('happy');
+          break;
+        case 'changeSize':
+          this.blobSize = Math.max(80, Math.min(200, this.blobSize + params));
+          break;
       }
-  }
-
-  setMood(mood) {
+    }
+  
+    setMood(mood) {
+      // Set visual mood
       this.currentMood = mood;
       const moodSettings = RESPONSES.moods[mood] || RESPONSES.moods.happy;
       this.moodHue = moodSettings.hue;
@@ -612,72 +620,88 @@ class AnimationManager {
       this.blobSize = moodSettings.size;
       this.blobPulse = 10;
       setTimeout(() => this.blobPulse = 0, 1000);
-  }
-
-  updateDialogueBox(text) {
+    }
+  
+    updateDialogueBox(text) {
+      // Update dialogue box content
       const box = document.getElementById('dialogue-box');
       if (box) {
-          box.innerHTML = text.replace(/\n/g, '<br>');
-          box.style.opacity = '1';
-          box.style.bottom = '80px';
-          clearTimeout(this.fadeTimeout);
-          this.fadeTimeout = setTimeout(() => {
-              box.style.opacity = '0';
-              box.style.bottom = '60px';
-          }, 5000);
+        box.innerHTML = text.replace(/\n/g, '<br>');
+        box.style.opacity = '1';
+        box.style.bottom = '80px';
+        clearTimeout(this.fadeTimeout);
+        this.fadeTimeout = setTimeout(() => {
+          box.style.opacity = '0';
+          box.style.bottom = '60px';
+        }, 5000);
       }
-  }
-
-  noise(x) {
+    }
+  
+    speak(text) {
+      // Convert text to speech
+      if (!this.speechSynthesis) return;
+      this.speechSynthesis.cancel(); // Clear any ongoing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR';
+      utterance.volume = 1.0;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      this.speechSynthesis.speak(utterance);
+    }
+  
+    noise(x) {
+      // Generate noise for blob animation
       return (Math.sin(x * 2.1) + Math.sin(x * 0.7) + Math.sin(x * 1.3)) / 3;
-  }
-
-  drawBlob(theme) {
+    }
+  
+    drawBlob(theme) {
+      // Draw animated blob
       const { ctx } = this.canvasManager;
       this.mouseTracker.smoothUpdate();
       const easeX = this.canvasManager.width / 2 + (this.mouseTracker.x - this.canvasManager.width / 2) * 0.05;
       const easeY = this.canvasManager.height / 2 + (this.mouseTracker.y - this.canvasManager.height / 2) * 0.05;
       const segments = 120;
-
+  
       ctx.beginPath();
       for (let i = 0; i <= segments; i++) {
-          const angle = (i / segments) * Math.PI * 2;
-          const noiseFactor = this.noise(angle * 2 + this.t) * 0.5 + 0.5;
-          const r = this.blobSize * (0.8 + noiseFactor * 0.4) + this.blobPulse;
-          const px = easeX + Math.cos(angle) * r;
-          const py = easeY + Math.sin(angle) * r;
-          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        const angle = (i / segments) * Math.PI * 2;
+        const noiseFactor = this.noise(angle * 2 + this.t) * 0.5 + 0.5;
+        const r = this.blobSize * (0.8 + noiseFactor * 0.4) + this.blobPulse;
+        const px = easeX + Math.cos(angle) * r;
+        const py = easeY + Math.sin(angle) * r;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
       }
       ctx.closePath();
-
+  
       const gradient = ctx.createRadialGradient(
-          easeX, easeY, 0,
-          easeX, easeY, this.blobSize * 1.5
+        easeX, easeY, 0,
+        easeX, easeY, this.blobSize * 1.5
       );
       const pulse = this.voiceProcessor.isActive ? Math.abs(Math.sin(this.t * 5)) * 20 + this.blobPulse : this.blobPulse;
       const hue = (this.moodHue + this.t * 40) % 360;
       gradient.addColorStop(0, `hsla(${hue}, 80%, ${60 + pulse}%, 0.9)`);
       gradient.addColorStop(1, `hsla(${(hue + 30) % 360}, 80%, ${50 + pulse}%, 0.5)`);
-
+  
       ctx.fillStyle = gradient;
       ctx.shadowColor = `hsla(${hue}, 80%, 50%, 0.5)`;
       ctx.shadowBlur = 40;
       ctx.fill();
       ctx.shadowBlur = 0;
-
+  
       ctx.strokeStyle = `hsla(${hue}, 100%, 80%, 0.3)`;
       ctx.lineWidth = 10;
       ctx.stroke();
-  }
-
-  animate() {
+    }
+  
+    animate() {
+      // Run animation loop
       const theme = document.body.classList.contains('dark') ? 'dark' : 'light';
       this.canvasManager.clear(theme);
       this.t += this.blobSpeed;
       this.drawBlob(theme);
       requestAnimationFrame(() => this.animate());
+    }
   }
-}
 
 // main.js
 function init() {
