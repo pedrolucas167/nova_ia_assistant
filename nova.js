@@ -124,7 +124,7 @@ function processCommand(text) {
   const comandos = [
     { match: ["olá", "está pronta nova", " ativar Macário"], action: () => {
       moodHue = 120;
-      speak("Ativando Macário!");
+      speak("Para o senhor sempre.");
     }},
     { match: ["hora"], action: () => {
       const hora = new Date().toLocaleTimeString('pt-BR');
@@ -138,7 +138,7 @@ function processCommand(text) {
     }},
     { match: ["quem é você"], action: () => {
       moodHue = 280;
-      speak("Eu sou Nova, sua assistente virtual cheia de estilo, criada para ajudar o Senhor Pedro Marques!");
+      speak("Eu sou Nova, sua assistente virtual, criada para ajudar o Senhor Pedro Marques!");
     }},
     { match: ["modo escuro"], action: () => {
       document.body.classList.add('dark');
