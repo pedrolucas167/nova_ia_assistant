@@ -46,9 +46,9 @@ function drawBlob(x, y, radius, segments, time) {
 
   // Novo: Adiciona partículas ao redor do blob
   for (let i = 0; i < 10; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = radius + Math.random() * 20;
-    ctx.beginPath();
+    const angle = Math.random() * Math.PI * 3;
+    const dist = radius + Math.random() * 20 *  pulseScale + noise(angle + time) * 20;
+    ctx.beginPath();    
     ctx.arc(
       x + Math.cos(angle) * dist,
       y + Math.sin(angle) * dist,
